@@ -86,6 +86,21 @@ ipcMain.handle('research:status', () => {
   return { running: false }; // live state flows via progress events
 });
 
+ipcMain.handle('research:metrics', () => {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT model_id, metric, value FROM metric_observations
+       WHERE metric IN ('median_output_tokens_per_second','median_time_to_first_token_seconds','hf_downloads','hf_likes','scicode','livecodebench','mmlu_pro')`,
+    )
+    .all() as Array<{ model_id: string; metric: string; value: number }>;
+  const byModel: Record<string, Record<string, number>> = {};
+  for (const r of rows) {
+    (byModel[r.model_id] ??= {})[r.metric] = r.value;
+  }
+  return byModel;
+});
+
 // Broadcast progress to the renderer
 onProgress((p) => {
   win?.webContents.send('research:progress', p);

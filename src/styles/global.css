@@ -217,3 +217,40 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
   font-size:13px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.5),0 0 24px rgba(237,255,69,.15);
   animation:toastin .4s var(--ease)}
 @keyframes toastin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* ── magic query panel ──────────────────────────────── */
+.magic-btn{border:1px solid rgba(110,110,255,.45);background:linear-gradient(135deg,rgba(110,110,255,.18),rgba(110,110,255,.06));color:var(--text);
+  border-radius:12px;padding:9px 16px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:'Sora';
+  box-shadow:0 0 18px rgba(110,110,255,.12);transition:all .25s var(--ease)}
+.magic-btn:hover{border-color:rgba(110,110,255,.8);box-shadow:0 0 26px rgba(110,110,255,.28)}
+.magic-btn.on{background:linear-gradient(135deg,rgba(237,255,69,.25),rgba(110,110,255,.12));border-color:rgba(237,255,69,.6);box-shadow:0 0 26px rgba(237,255,69,.2)}
+.magic-panel{position:fixed;top:110px;right:28px;width:460px;max-width:92vw;z-index:60;
+  background:linear-gradient(165deg,rgba(24,24,45,.92),rgba(10,10,32,.94));border:1px solid rgba(110,110,255,.35);
+  border-radius:18px;padding:16px;backdrop-filter:blur(26px);box-shadow:0 24px 70px rgba(0,0,0,.6),0 0 40px rgba(110,110,255,.12);
+  animation:panelin .35s var(--ease)}
+@keyframes panelin{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.magic-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.magic-title{font-size:14px;font-weight:700;letter-spacing:.2px;color:var(--text)}
+.magic-close{margin-left:auto;width:26px;height:26px;border-radius:8px;border:none;background:var(--glass2);color:var(--text3);cursor:pointer;font-size:11px}
+.magic-close:hover{background:rgba(255,255,255,.15);color:var(--text)}
+.magic-input{display:flex;align-items:center;gap:9px;background:rgba(245,245,245,.05);border:1px solid var(--border);border-radius:11px;padding:10px 13px;transition:border-color .25s,box-shadow .25s}
+.magic-input:focus-within{border-color:rgba(110,110,255,.6);box-shadow:0 0 0 3px rgba(110,110,255,.12)}
+.magic-input .ic{color:var(--text3)}
+.magic-input input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:'Sora'}
+.magic-input input::placeholder{color:var(--text3)}
+.magic-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.magic-chip{border:1px solid var(--border);background:var(--glass);color:var(--text2);border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:500;cursor:pointer;transition:all .18s;font-family:'Sora'}
+.magic-chip:hover{border-color:rgba(110,110,255,.5);color:var(--text)}
+.magic-axes{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.magic-axis{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--accent);background:rgba(237,255,69,.09);border:1px solid rgba(237,255,69,.3);border-radius:7px;padding:3px 8px}
+.magic-empty{color:var(--text3);font-size:12.5px;padding:18px 4px;text-align:center}
+.magic-results{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:380px;overflow:auto}
+.magic-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--border);background:rgba(245,245,245,.04);border-radius:11px;padding:9px 12px;cursor:pointer;transition:all .18s;font-family:'Sora'}
+.magic-row:hover{border-color:rgba(110,110,255,.5);background:rgba(110,110,255,.08)}
+.magic-rank{font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:var(--accent);width:26px;flex:none}
+.magic-name{flex:1;min-width:0}
+.magic-mname{display:block;font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.magic-mid{display:block;font-size:9.5px;color:var(--text3);font-family:'JetBrains Mono';margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.magic-scores{display:flex;gap:8px;flex:none}
+.magic-score{font-size:9.5px;color:var(--text2);font-family:'JetBrains Mono';background:var(--glass2);border-radius:6px;padding:2px 6px;white-space:nowrap}
+.magic-total{font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:var(--accent);flex:none;min-width:34px;text-align:right}

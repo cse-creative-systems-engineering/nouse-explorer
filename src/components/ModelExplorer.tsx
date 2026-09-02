@@ -6,6 +6,7 @@ import { HeroStats } from './HeroStats';
 import { UsecasePills, type UsecaseDef } from './UsecasePills';
 import { GlassToggle } from './GlassToggle';
 import { ShowpieceCard } from './ShowpieceCard';
+import { MagicPanel } from './MagicPanel';
 import { ModelDetail } from './ModelDetail';
 
 const USECASES: UsecaseDef[] = [
@@ -27,6 +28,7 @@ export function ModelExplorer() {
 
   const [usecase, setUsecase] = useState('all');
   const [query, setQuery] = useState('');
+  const [magicOpen, setMagicOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = models;
@@ -107,6 +109,13 @@ export function ModelExplorer() {
           onChange={(v) => $autoRefresh.set(v)}
           label="AUTO-REFRESH"
         />
+        <button
+          type="button"
+          className={`magic-btn${magicOpen ? ' on' : ''}`}
+          onClick={() => setMagicOpen((v) => !v)}
+        >
+          ✦ Magic
+        </button>
         <div className="vt">
           <button
             type="button"
@@ -167,6 +176,7 @@ export function ModelExplorer() {
         )}
       </div>
 
+      {magicOpen && <MagicPanel onClose={() => setMagicOpen(false)} />}
       {selected && <ModelDetail model={selected} />}
     </div>
   );

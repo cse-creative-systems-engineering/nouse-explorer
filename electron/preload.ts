@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('nouse', {
   research: {
     syncCatalog: (catalog: unknown[]) => ipcRenderer.invoke('research:sync-catalog', catalog) as Promise<{ added: number }>,
     start: () => ipcRenderer.invoke('research:start') as Promise<{ started: boolean }>,
+    getMetrics: () => ipcRenderer.invoke('research:metrics') as Promise<Record<string, Record<string, number>>>,
     onProgress: (cb: (p: ResearchProgress) => void) => {
       const listener = (_e: unknown, p: ResearchProgress) => cb(p);
       ipcRenderer.on('research:progress', listener);

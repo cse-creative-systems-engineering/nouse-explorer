@@ -7,6 +7,7 @@ export interface NouseBridge {
   research: {
     syncCatalog: (catalog: unknown[]) => Promise<{ added: number }>;
     start: () => Promise<{ started: boolean }>;
+    getMetrics: () => Promise<Record<string, Record<string, number>>>;
     onProgress: (cb: (p: ResearchProgress) => void) => () => void;
   };
 }
