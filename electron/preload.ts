@@ -39,7 +39,50 @@ contextBridge.exposeInMainWorld('nouse', {
     setSecret: (name: string, value: string) => ipcRenderer.invoke('settings:set-secret', name, value) as Promise<{ ok: boolean; view?: AppSettings }>,
     setDistiller: (model: string) => ipcRenderer.invoke('settings:set-distiller', model) as Promise<{ ok: boolean; view?: AppSettings }>,
   },
+  alerts: {
+    list: () => ipcRenderer.invoke('alerts:list') as Promise<Watch[]>,
+    create: (w: Omit<Watch, 'id'>) => ipcRenderer.invoke('alerts:create', w) as Promise<Watch>,
+    update: (id: string, patch: Partial<Omit<Watch, 'id'>>) => ipcRenderer.invoke('alerts:update', id, patch) as Promise<Watch[]>,
+    remove: (id: string) => ipcRenderer.invoke('alerts:delete', id) as Promise<Watch[]>,
+    history: () => ipcRenderer.invoke('alerts:history') as Promise<AlertRecord[]>,
+    ack: () => ipcRenderer.invoke('alerts:ack') as Promise<AlertRecord[]>,
+    checkNow: () => ipcRenderer.invoke('alerts:check-now') as Promise<AlertRecord[]>,
+    setCatalog: (catalog: unknown[]) => ipcRenderer.invoke('alerts:set-catalog', catalog) as Promise<{ ok: boolean }>,
+    onFired: (cb: (alerts: AlertRecord[]) => void) => {
+      const listener = (_e: IpcRendererEvent, alerts: AlertRecord[]) => cb(alerts);
+      ipcRenderer.on('alerts:fired', listener);
+      return () => ipcRenderer.removeListener('alerts:fired', listener);
+    },
+  },
 });
+
+export interface Watch {
+  id: string;
+  name: string;
+  model_ids: string[];
+  provider: string | null;
+  conditions: {
+    price_drop_percent?: number;
+    price_increase_percent?: number;
+    discount_appears?: boolean;
+    discount_disappears?: boolean;
+    new_model?: boolean;
+    removed_model?: boolean;
+  };
+  notify_desktop: boolean;
+  active: boolean;
+}
+
+export interface AlertRecord {
+  watch_id: string;
+  model_id: string;
+  model_name: string;
+  type: string;
+  message: string;
+  old_value?: string;
+  new_value?: string;
+  timestamp: string;
+}
 
 export interface AppSettings {
   nousApiKeySet: boolean;

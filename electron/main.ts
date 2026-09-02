@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { getDb, upsertProfile } from './research/db.js';
 import { onProgress, runQueue, syncCatalog } from './research/queue.js';
 import { getSettingsView, setDistillerModel, setSecret } from './research/settings.js';
+import {
+  alertHistory, acknowledgeAllAlerts, checkWatches, createWatch, deleteWatch,
+  listWatches, updateWatch, type Watch,
+} from './research/alerts.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -164,6 +168,80 @@ ipcMain.handle('research:profile', (_e, modelId: string) => {
   }
 });
 
+// --- alerts IPC ---
+ipcMain.handle('alerts:list', () => listWatches());
+ipcMain.handle('alerts:create', (_e, w: Omit<Watch, 'id'>) => createWatch(w));
+ipcMain.handle('alerts:update', (_e, id: string, patch: Partial<Omit<Watch, 'id'>>) => {
+  updateWatch(id, patch);
+  return listWatches();
+});
+ipcMain.handle('alerts:delete', (_e, id: string) => {
+  deleteWatch(id);
+  return listWatches();
+});
+ipcMain.handle('alerts:history', () => alertHistory(100));
+ipcMain.handle('alerts:ack', () => {
+  acknowledgeAllAlerts();
+  return alertHistory(100);
+});
+ipcMain.handle('alerts:check-now', async () => {
+  const catalog = await fetchCatalogForAlerts();
+  const fired = checkWatches(catalog);
+  if (fired.length > 0) {
+    win?.webContents.send('alerts:fired', fired);
+  }
+  return fired;
+});
+
+// The renderer sends the latest catalog snapshot so the alert engine can
+// diff against it without a second fetch.
+let alertCatalog: Array<{ id: string; name: string; pricing: { prompt?: string; completion?: string; original?: { prompt?: string; completion?: string } } }> = [];
+ipcMain.handle('alerts:set-catalog', (_e, catalog: typeof alertCatalog) => {
+  alertCatalog = catalog ?? [];
+  return { ok: true };
+});
+
+async function fetchCatalogForAlerts() {
+  if (alertCatalog.length > 0) return alertCatalog;
+  try {
+    const res = await fetch('https://inference-api.nousresearch.com/v1/models', {
+      headers: { 'User-Agent': 'NouseExplorer/0.1' },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) return [];
+    const j = (await res.json()) as { data?: Array<{ id?: string; name?: string; pricing?: { prompt?: string; completion?: string; original?: { prompt?: string } } }> };
+    return (j.data ?? []).map((m) => ({
+      id: m.id ?? '',
+      name: m.name ?? m.id ?? '',
+      pricing: {
+        prompt: typeof m.pricing?.prompt === 'string' ? m.pricing.prompt : undefined,
+        completion: typeof m.pricing?.completion === 'string' ? m.pricing.completion : undefined,
+        original: typeof m.pricing?.original === 'object' && m.pricing.original
+          ? { prompt: m.pricing.original.prompt }
+          : undefined,
+      },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// Background alert scheduler — every 30 minutes, plus a check shortly after launch.
+let alertsTimer: ReturnType<typeof setInterval> | null = null;
+async function scheduledAlertCheck() {
+  const catalog = await fetchCatalogForAlerts();
+  if (catalog.length === 0) return;
+  const fired = checkWatches(catalog);
+  if (fired.length > 0) {
+    win?.webContents.send('alerts:fired', fired);
+  }
+}
+function startAlertScheduler() {
+  if (alertsTimer) return;
+  setTimeout(() => void scheduledAlertCheck(), 45_000);
+  alertsTimer = setInterval(() => void scheduledAlertCheck(), 30 * 60_000);
+}
+
 // Broadcast progress to the renderer
 onProgress((p) => {
   win?.webContents.send('research:progress', p);
@@ -174,6 +252,7 @@ app.whenReady().then(() => {
   // Proper per-app data dir (defaults to 'Electron' otherwise)
   app.setPath('userData', path.join(app.getPath('appData'), 'nouse-explorer'));
   createWindow();
+  startAlertScheduler();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

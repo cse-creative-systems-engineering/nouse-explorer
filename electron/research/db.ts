@@ -68,6 +68,36 @@ function migrate(d: DatabaseSync): void {
       queued_at TEXT,
       updated_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS watches (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      model_ids TEXT,              -- JSON array of specific model ids
+      provider TEXT,               -- watch a whole provider
+      conditions TEXT,             -- JSON: { price_drop_percent, price_increase_percent,
+                                   --          discount_appears, discount_disappears,
+                                   --          new_model, removed_model }
+      notify_desktop INTEGER DEFAULT 1,
+      active INTEGER DEFAULT 1,
+      last_prices TEXT,            -- JSON: { modelId: {prompt, completion} } tracked prices
+      last_alert_at TEXT,
+      check_count INTEGER DEFAULT 0,
+      created_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS alert_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      watch_id TEXT,
+      model_id TEXT,
+      model_name TEXT,
+      type TEXT,                   -- price_drop | price_increase | discount_appeared |
+                                   -- discount_disappeared | new_model | removed_model
+      message TEXT,
+      old_value TEXT,
+      new_value TEXT,
+      timestamp TEXT,
+      acknowledged INTEGER DEFAULT 0
+    );
   `);
 
   // Column migrations for pre-existing DBs (CREATE TABLE IF NOT EXISTS does

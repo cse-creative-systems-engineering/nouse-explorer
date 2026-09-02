@@ -10,6 +10,7 @@ import { ShowpieceCard } from './ShowpieceCard';
 import { ModelTable } from './ModelTable';
 import { ModelDetail } from './ModelDetail';
 import { SettingsPanel } from './SettingsPanel';
+import { WatchesPanel } from './WatchesPanel';
 import { nouse, type ResearchAxis } from '../lib/nouse';
 
 const USECASES: UsecaseDef[] = [
@@ -90,6 +91,7 @@ export function ModelExplorer() {
   const [extra, setExtra] = useState<Record<string, Record<string, number>>>({});
   const [researchedAxes, setResearchedAxes] = useState<ResearchAxis[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [watchesOpen, setWatchesOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDone = useRef(0);
 
@@ -115,6 +117,9 @@ export function ModelExplorer() {
   };
   useEffect(() => {
     loadResearch();
+    // Give the alert engine a fresh catalog snapshot (scheduler diffs against it)
+    const b = nouse();
+    if (b?.alerts) void b.alerts.setCatalog(models);
   }, []);
   useEffect(() => {
     if (research.done > prevDone.current) {
@@ -262,6 +267,14 @@ export function ModelExplorer() {
             onChange={(v) => $autoRefresh.set(v)}
             label="AUTO-REFRESH"
           />
+          <button
+            type="button"
+            className="magic-btn bell-btn"
+            onClick={() => setWatchesOpen(true)}
+            title="Alerts & watches"
+          >
+            🔔
+          </button>
           <div className="vt">
             <button
               type="button"
@@ -376,6 +389,7 @@ export function ModelExplorer() {
       )}
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {watchesOpen && <WatchesPanel onClose={() => setWatchesOpen(false)} />}
       {selected && <ModelDetail model={selected} />}
     </div>
   );
