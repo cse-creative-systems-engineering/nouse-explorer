@@ -4,6 +4,7 @@ import { $autoRefresh, $refreshInterval, $research, $models } from './lib/store'
 import { ModelExplorer } from './components/ModelExplorer';
 import { ParticleField } from './components/ParticleField';
 import { ResearchBanner } from './components/ResearchBanner';
+import { Onboarding } from './components/Onboarding';
 import { useModels } from './hooks/useModels';
 import { nouse } from './lib/nouse';
 
@@ -52,6 +53,7 @@ export function App() {
       <div className="aurora au3" aria-hidden="true" />
       <ModelExplorer />
       <ResearchBanner />
+      <Onboarding />
     </>
   );
 }

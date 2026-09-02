@@ -344,3 +344,9 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .signal-chip{font-size:10.5px;font-weight:700;border-radius:999px;padding:4px 11px;letter-spacing:.3px}
 .signal-chip.pos{color:var(--success);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3)}
 .signal-chip.neg{color:var(--warn);background:rgba(255,205,66,.1);border:1px solid rgba(255,205,66,.3)}
+
+/* ── onboarding ─────────────────────────────────────── */
+.onboarding-modal{width:min(560px,92vw)}
+.onboarding-mark{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:26px;font-weight:800;color:#0a0a20;margin-bottom:14px;
+  background:conic-gradient(from 210deg,#0000f2,#6e6eff,#edff45,#0000f2);
+  box-shadow:0 0 34px rgba(110,110,255,.45), inset 0 1px 0 rgba(255,255,255,.4)}
