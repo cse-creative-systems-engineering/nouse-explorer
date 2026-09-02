@@ -193,3 +193,27 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .btn{border:1px solid var(--border);background:var(--glass2);color:var(--text);border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Sora';transition:all .18s}
 .btn:hover{border-color:rgba(110,110,255,.5);background:rgba(110,110,255,.12)}
 .btn-icon{width:32px;height:32px;display:grid;place-items:center;padding:0}
+
+/* ── research banner + toast ─────────────────────────── */
+.research-banner{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:40;
+  display:flex;align-items:center;gap:12px;min-width:520px;max-width:680px;
+  padding:12px 18px;border-radius:14px;
+  background:linear-gradient(160deg,rgba(245,245,245,.09),rgba(245,245,245,.04));
+  border:1px solid rgba(110,110,255,.35);backdrop-filter:blur(24px);
+  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 30px rgba(110,110,255,.15);
+  animation:risesoft .45s var(--ease)}
+@keyframes risesoft{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%)}}
+.rb-pulse{width:9px;height:9px;border-radius:50%;background:#6e6eff;flex:none;
+  box-shadow:0 0 12px #6e6eff;animation:rbpulse 1.6s ease-in-out infinite}
+@keyframes rbpulse{0%,100%{opacity:.5}50%{opacity:1}}
+.rb-text{font-size:12.5px;color:var(--text2);line-height:1.45}
+.rb-text strong{color:var(--text);font-weight:600}
+.rb-count{font-family:'JetBrains Mono';font-size:11px;color:var(--accent);white-space:nowrap;flex:none}
+.rb-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 14px 14px;overflow:hidden;background:rgba(245,245,245,.06)}
+.rb-bar-fill{height:100%;background:linear-gradient(90deg,#6e6eff,#edff45);transition:width .5s var(--ease);box-shadow:0 0 10px rgba(110,110,255,.6)}
+.rb-toast{position:fixed;top:64px;right:24px;z-index:45;padding:12px 18px;border-radius:12px;
+  background:linear-gradient(160deg,rgba(237,255,69,.14),rgba(237,255,69,.05));
+  border:1px solid rgba(237,255,69,.4);backdrop-filter:blur(20px);color:var(--text);
+  font-size:13px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.5),0 0 24px rgba(237,255,69,.15);
+  animation:toastin .4s var(--ease)}
+@keyframes toastin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}

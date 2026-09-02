@@ -16,6 +16,24 @@ export const $selectedId = atom<string | null>(null);
 export const $autoRefresh = atom<boolean>(true);
 export const $refreshInterval = atom<number>(30); // minutes
 
+export interface ResearchProgress {
+  running: boolean;
+  pending: number;
+  done: number;
+  failed: number;
+  current: string | null;
+  tier: number | null;
+}
+
+export const $research = atom<ResearchProgress>({
+  running: false,
+  pending: 0,
+  done: 0,
+  failed: 0,
+  current: null,
+  tier: null,
+});
+
 export const $filtered = computed(
   [$models, $filters, $sortKey, $sortDir],
   (models, filters, key, dir) => sortModels(applyFilters(models, filters), key, dir),

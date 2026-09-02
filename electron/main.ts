@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getDb, upsertProfile } from './research/db.js';
+import { onProgress, runQueue, syncCatalog } from './research/queue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +19,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     frame: false, // custom glass titlebar in the renderer
-    backgroundColor: '#0a0a0f',
+    backgroundColor: '#0a0a20',
     show: false,
     title: 'Nouse Explorer',
     icon: path.join(__dirname, '../build/icon.png'),
@@ -54,11 +56,45 @@ ipcMain.on('window:maximize', () => {
   else win?.maximize();
 });
 ipcMain.on('window:close', () => win?.close());
-ipcMain.on('window:drag', () => {
-  /* region is -webkit-app-region: drag; this channel reserved for future use */
+
+// --- research engine IPC ---
+ipcMain.handle('research:sync-catalog', (_e, catalog: Array<Record<string, unknown>>) => {
+  const db = getDb();
+  for (const m of catalog) {
+    const id = String(m.id ?? '');
+    if (!id) continue;
+    const prov = id.split('/')[0] ?? '';
+    upsertProfile(db, {
+      id,
+      name: m.name ? String(m.name) : undefined,
+      provider: prov,
+      context_length: typeof m.context_length === 'number' ? m.context_length : undefined,
+      hugging_face_id: typeof m.hugging_face_id === 'string' ? m.hugging_face_id : null,
+    });
+  }
+  const added = syncCatalog(catalog as Array<{ id: string; name?: string; context_length?: number }>);
+  return { added };
+});
+
+ipcMain.handle('research:start', async () => {
+  // Kick off in the background; progress flows over 'research:progress'
+  void runQueue();
+  return { started: true };
+});
+
+ipcMain.handle('research:status', () => {
+  return { running: false }; // live state flows via progress events
+});
+
+// Broadcast progress to the renderer
+onProgress((p) => {
+  win?.webContents.send('research:progress', p);
 });
 
 app.whenReady().then(() => {
+  app.setName('Nouse Explorer');
+  // Proper per-app data dir (defaults to 'Electron' otherwise)
+  app.setPath('userData', path.join(app.getPath('appData'), 'nouse-explorer'));
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

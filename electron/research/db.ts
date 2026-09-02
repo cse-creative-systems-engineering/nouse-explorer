@@ -1,0 +1,111 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { app } from 'electron';
+
+let db: DatabaseSync | null = null;
+
+export function getDb(): DatabaseSync {
+  if (db) return db;
+  const dir = path.join(app.getPath('userData'), 'research');
+  mkdirSync(dir, { recursive: true });
+  db = new DatabaseSync(path.join(dir, 'nouse.db'));
+  migrate(db);
+  return db;
+}
+
+function migrate(d: DatabaseSync): void {
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS model_profiles (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      provider TEXT,
+      context_length INTEGER,
+      hugging_face_id TEXT,
+      researched_at TEXT,
+      research_version INTEGER DEFAULT 1,
+      profile_json TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS model_aliases (
+      canonical_id TEXT NOT NULL,
+      source TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      confidence REAL,
+      resolved_at TEXT,
+      PRIMARY KEY (canonical_id, source, source_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS raw_sources (
+      url TEXT PRIMARY KEY,
+      fetched_at TEXT,
+      content_hash TEXT,
+      kind TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS metric_observations (
+      model_id TEXT NOT NULL,
+      metric TEXT NOT NULL,
+      value REAL,
+      source_url TEXT,
+      fetched_at TEXT,
+      method TEXT,
+      PRIMARY KEY (model_id, metric, source_url)
+    );
+
+    CREATE TABLE IF NOT EXISTS research_queue (
+      model_id TEXT PRIMARY KEY,
+      priority INTEGER DEFAULT 0,
+      tier INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'pending',      -- pending | fetching | distilled | done | failed
+      attempts INTEGER DEFAULT 0,
+      queued_at TEXT,
+      updated_at TEXT
+    );
+  `);
+}
+
+export function upsertProfile(d: DatabaseSync, p: {
+  id: string; name?: string; provider?: string; context_length?: number; hugging_face_id?: string | null; profile_json?: string;
+}): void {
+  d.prepare(`
+    INSERT INTO model_profiles (id, name, provider, context_length, hugging_face_id, researched_at, profile_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name=excluded.name, provider=excluded.provider, context_length=excluded.context_length,
+      hugging_face_id=excluded.hugging_face_id,
+      researched_at=excluded.researched_at, profile_json=excluded.profile_json
+  `).run(p.id, p.name ?? null, p.provider ?? null, p.context_length ?? null, p.hugging_face_id ?? null, new Date().toISOString(), p.profile_json ?? null);
+}
+
+export function recordMetric(d: DatabaseSync, m: {
+  model_id: string; metric: string; value: number; source_url: string; method: string;
+}): void {
+  d.prepare(`
+    INSERT OR REPLACE INTO metric_observations (model_id, metric, value, source_url, fetched_at, method)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(m.model_id, m.metric, m.value, m.source_url, new Date().toISOString(), m.method);
+}
+
+export function enqueue(d: DatabaseSync, modelId: string, tier = 1, priority = 0): void {
+  d.prepare(`
+    INSERT OR IGNORE INTO research_queue (model_id, priority, tier, status, queued_at, updated_at)
+    VALUES (?, ?, ?, 'pending', ?, ?)
+  `).run(modelId, priority, tier, new Date().toISOString(), new Date().toISOString());
+}
+
+export function queueSnapshot(d: DatabaseSync): { pending: number; done: number; failed: number } {
+  const row = d.prepare(`
+    SELECT
+      SUM(CASE WHEN status IN ('pending','fetching','distilled') THEN 1 ELSE 0 END) AS pending,
+      SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS done,
+      SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed
+    FROM research_queue
+  `).get() as { pending: number | null; done: number | null; failed: number | null };
+  return { pending: row.pending ?? 0, done: row.done ?? 0, failed: row.failed ?? 0 };
+}
