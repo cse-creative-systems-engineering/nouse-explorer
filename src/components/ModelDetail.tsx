@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
+import { nouse } from '../lib/nouse';
 import {
   DAY_LABELS,
   fmtScore,
@@ -30,6 +31,111 @@ function PricingCell({ label, value }: { label: string; value?: string }) {
       <span className="kv-label">{label}</span>
       <span className="kv-value big">{formatUsd(perM)} <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}>/ 1M</span></span>
       <span className="kv-per-token">{formatPerToken(value)} / token</span>
+    </div>
+  );
+}
+
+interface DistilledProfile {
+  summary: string;
+  strengths: { text: string; sources: string[] }[];
+  weaknesses: { text: string; sources: string[] }[];
+  usecase_signals: Record<string, { signal: number; confidence: number; evidence: { text: string; sources: string[] }[] }>;
+  trusted: boolean;
+  untrusted_claims: string[];
+}
+
+function ProfileSection({ modelId }: { modelId: string }) {
+  const [profile, setProfile] = useState<DistilledProfile | null>(null);
+  const [researchedAt, setResearchedAt] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const b = nouse();
+    if (!b?.research) {
+      setLoaded(true);
+      return;
+    }
+    void b.research.getProfile(modelId).then((r) => {
+      if (cancelled) return;
+      setProfile(r ? (r.profile as DistilledProfile) : null);
+      setResearchedAt(r?.researched_at ?? null);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [modelId]);
+
+  if (loaded && !profile) return null;
+
+  const signalLabel = (s: number) => (s > 0 ? '+' : '') + s;
+  return (
+    <div className="modal-section">
+      <h3 className="modal-section-title">
+        Research profile{' '}
+        {profile && (
+          <span className={`badge ${profile.trusted ? 'success' : 'warning'}`} style={{ marginLeft: 6 }}>
+            {profile.trusted ? 'cited' : 'untrusted'}
+          </span>
+        )}
+        {researchedAt && (
+          <span style={{ marginLeft: 8, color: 'var(--text-muted)', fontSize: 10, fontWeight: 400 }}>
+            {new Date(researchedAt).toLocaleString()}
+          </span>
+        )}
+      </h3>
+      {!profile ? (
+        <div style={{ padding: '12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.20)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          Researching this model — profile pending (needs the Nous API key in Settings).
+        </div>
+      ) : (
+        <>
+          {profile.summary && <p className="modal-desc" style={{ marginTop: 0 }}>{profile.summary}</p>}
+          {profile.strengths.length > 0 && (
+            <div className="profile-claims">
+              {profile.strengths.map((c, i) => (
+                <div key={`s${i}`} className="profile-claim good">
+                  <span className="claim-mark">▲</span>
+                  <div>
+                    <div className="claim-text">{c.text}</div>
+                    <div className="claim-srcs">{c.sources.map((s) => <a key={s} className="claim-src" href={s} target="_blank" rel="noreferrer">{new URL(s).hostname}</a>)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {profile.weaknesses.length > 0 && (
+            <div className="profile-claims">
+              {profile.weaknesses.map((c, i) => (
+                <div key={`w${i}`} className="profile-claim bad">
+                  <span className="claim-mark">▼</span>
+                  <div>
+                    <div className="claim-text">{c.text}</div>
+                    <div className="claim-srcs">{c.sources.map((s) => <a key={s} className="claim-src" href={s} target="_blank" rel="noreferrer">{new URL(s).hostname}</a>)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {Object.entries(profile.usecase_signals).some(([, v]) => v.signal !== 0) && (
+            <div className="profile-signals">
+              {Object.entries(profile.usecase_signals)
+                .filter(([, v]) => v.signal !== 0)
+                .map(([uc, v]) => (
+                  <span key={uc} className={`signal-chip ${v.signal > 0 ? 'pos' : 'neg'}`} title={`confidence ${Math.round(v.confidence * 100)}%`}>
+                    {uc} {signalLabel(v.signal)}
+                  </span>
+                ))}
+            </div>
+          )}
+          {!profile.trusted && (
+            <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,205,66,.08)', border: '1px solid rgba(255,205,66,.3)', fontSize: 11.5, color: 'var(--warn)' }}>
+              {profile.untrusted_claims.length} claims lack a source and were flagged — not shown as fact.
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -89,6 +195,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
         </header>
 
         <div className="modal-body">
+          <ProfileSection modelId={model.id} />
           {model.description && (
             <div className="modal-section">
               <p className="modal-desc">{model.description}</p>

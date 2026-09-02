@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { enqueue, getDb, queueSnapshot } from './db.js';
 import { aaMetrics, artificialAnalysis, matchAaRecord, persistMetrics, providerFirst } from './fetchers.js';
 import { getSecret } from './settings.js';
+import { distillProfile, type RawEvidence } from './distill.js';
 
 export interface ResearchProgress {
   running: boolean;
@@ -25,13 +26,16 @@ export function broadcast(p: ResearchProgress): void {
   for (const fn of listeners) fn(p);
 }
 
-/** Diff live catalog against the queue: enqueue any model not yet researched. */
+/** Diff live catalog against the queue: enqueue any model not yet researched,
+ *  or whose profile is missing a description (backfill after schema migration). */
 export function syncCatalog(catalog: Array<{ id: string; name?: string; context_length?: number }>): number {
   const db = getDb();
   let added = 0;
   for (const m of catalog) {
-    const row = db.prepare('SELECT status FROM research_queue WHERE model_id = ?').get(m.id);
-    if (!row) {
+    const row = db
+      .prepare('SELECT rq.status, (mp.description IS NULL) AS missing_desc FROM research_queue rq LEFT JOIN model_profiles mp ON mp.id = rq.model_id WHERE rq.model_id = ?')
+      .get(m.id) as { status?: string; missing_desc?: number } | undefined;
+    if (!row || (row.status === 'done' && row.missing_desc === 1)) {
       enqueue(db, m.id, 1, 0);
       added += 1;
     }
@@ -60,8 +64,8 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
     async function processOne(modelId: string, tier: number): Promise<void> {
       try {
         const model = db
-          .prepare('SELECT id, name, context_length, hugging_face_id FROM model_profiles WHERE id = ?')
-          .get(modelId) as { id: string; name: string | null; context_length: number | null; hugging_face_id: string | null } | undefined;
+          .prepare('SELECT id, name, context_length, hugging_face_id, description, profile_json FROM model_profiles WHERE id = ?')
+          .get(modelId) as { id: string; name: string | null; context_length: number | null; hugging_face_id: string | null; description: string | null; profile_json: string | null } | undefined;
 
         // Tier 1a: provider-first
         const provMetrics = await providerFirst(modelId, model?.hugging_face_id ?? null);
@@ -79,6 +83,25 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
               `INSERT OR IGNORE INTO model_aliases (canonical_id, source, source_id, confidence, resolved_at)
                VALUES (?, 'artificial-analysis', ?, 0.9, ?)`,
             ).run(modelId, slug, new Date().toISOString());
+          }
+        }
+
+        // Tier 3: qualitative distillation (only when the user's Nous key is set)
+        if (getSecret('nous_api_key') && model) {
+          const metrics = db
+            .prepare('SELECT metric, value FROM metric_observations WHERE model_id = ?')
+            .all(modelId) as Array<{ metric: string; value: number }>;
+          const evidence: RawEvidence = {
+            description: model.description ?? undefined,
+            metrics: Object.fromEntries(metrics.map((m) => [m.metric, m.value])),
+          };
+          const profile = await distillProfile(modelId, model.name ?? modelId, evidence);
+          if (profile) {
+            db.prepare('UPDATE model_profiles SET profile_json=?, researched_at=? WHERE id=?').run(
+              JSON.stringify(profile),
+              new Date().toISOString(),
+              modelId,
+            );
           }
         }
 

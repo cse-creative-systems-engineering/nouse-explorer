@@ -71,6 +71,7 @@ ipcMain.handle('research:sync-catalog', (_e, catalog: Array<Record<string, unkno
       provider: prov,
       context_length: typeof m.context_length === 'number' ? m.context_length : undefined,
       hugging_face_id: typeof m.hugging_face_id === 'string' ? m.hugging_face_id : null,
+      description: typeof m.description === 'string' ? m.description : null,
     });
   }
   const added = syncCatalog(catalog as Array<{ id: string; name?: string; context_length?: number }>);
@@ -148,6 +149,19 @@ ipcMain.handle('settings:set-distiller', (_e, model: string) => {
   if (typeof model !== 'string' || !model.includes('/')) return { ok: false };
   setDistillerModel(model);
   return { ok: true, view: getSettingsView() };
+});
+
+ipcMain.handle('research:profile', (_e, modelId: string) => {
+  const db = getDb();
+  const row = db.prepare('SELECT profile_json, researched_at FROM model_profiles WHERE id = ?').get(modelId) as
+    | { profile_json: string | null; researched_at: string | null }
+    | undefined;
+  if (!row?.profile_json) return null;
+  try {
+    return { profile: JSON.parse(row.profile_json), researched_at: row.researched_at };
+  } catch {
+    return null;
+  }
 });
 
 // Broadcast progress to the renderer

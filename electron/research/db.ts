@@ -27,6 +27,7 @@ function migrate(d: DatabaseSync): void {
       provider TEXT,
       context_length INTEGER,
       hugging_face_id TEXT,
+      description TEXT,
       researched_at TEXT,
       research_version INTEGER DEFAULT 1,
       profile_json TEXT
@@ -68,19 +69,32 @@ function migrate(d: DatabaseSync): void {
       updated_at TEXT
     );
   `);
+
+  // Column migrations for pre-existing DBs (CREATE TABLE IF NOT EXISTS does
+  // not add columns to existing tables).
+  const cols = new Set(
+    (d.prepare(`PRAGMA table_info(model_profiles)`).all() as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!cols.has('description')) {
+    d.exec(`ALTER TABLE model_profiles ADD COLUMN description TEXT`);
+  }
 }
 
 export function upsertProfile(d: DatabaseSync, p: {
-  id: string; name?: string; provider?: string; context_length?: number; hugging_face_id?: string | null; profile_json?: string;
+  id: string; name?: string; provider?: string; context_length?: number; hugging_face_id?: string | null;
+  description?: string | null; profile_json?: string | null;
 }): void {
   d.prepare(`
-    INSERT INTO model_profiles (id, name, provider, context_length, hugging_face_id, researched_at, profile_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO model_profiles (id, name, provider, context_length, hugging_face_id, description, researched_at, profile_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name=excluded.name, provider=excluded.provider, context_length=excluded.context_length,
-      hugging_face_id=excluded.hugging_face_id,
+      hugging_face_id=excluded.hugging_face_id, description=excluded.description,
       researched_at=excluded.researched_at, profile_json=excluded.profile_json
-  `).run(p.id, p.name ?? null, p.provider ?? null, p.context_length ?? null, p.hugging_face_id ?? null, new Date().toISOString(), p.profile_json ?? null);
+  `).run(
+    p.id, p.name ?? null, p.provider ?? null, p.context_length ?? null, p.hugging_face_id ?? null,
+    p.description ?? null, new Date().toISOString(), p.profile_json ?? null,
+  );
 }
 
 export function recordMetric(d: DatabaseSync, m: {

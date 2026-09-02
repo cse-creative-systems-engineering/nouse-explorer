@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('nouse', {
     start: () => ipcRenderer.invoke('research:start') as Promise<{ started: boolean }>,
     getMetrics: () => ipcRenderer.invoke('research:metrics') as Promise<Record<string, Record<string, number>>>,
     getAxes: () => ipcRenderer.invoke('research:axes') as Promise<ResearchAxis[]>,
+    getProfile: (modelId: string) => ipcRenderer.invoke('research:profile', modelId) as Promise<{ profile: unknown; researched_at: string } | null>,
     onProgress: (cb: (p: ResearchProgress) => void) => {
       const listener = (_e: IpcRendererEvent, p: ResearchProgress) => cb(p);
       ipcRenderer.on('research:progress', listener);
