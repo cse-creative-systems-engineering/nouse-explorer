@@ -134,7 +134,7 @@ export function parseMagicQuery(q: string): QueryAxis[] {
   if (/\b(fast|speed|quick|rapid)\b/.test(s)) push('speed', 1, 2);
   if (/\b(latency|low.latency|responsive)\b/.test(s)) push('latency', -1, 1.5);
   // cost
-  if (/\b(cheap|cheapest|affordable|low.cost|budget|value)\b/.test(s)) push('cost_out', -1, 1.5);
+  if (/\b(cheap|cheapest|affordable|low.cost|budget|value)\b/.test(s)) push('cost_out', -1, 3);
   if (/\b(expensive|premium)\b/.test(s)) push('cost_out', 1, 1);
   if (/\bfree\b/.test(s)) push('free', 1, 3);
   // context
@@ -143,4 +143,33 @@ export function parseMagicQuery(q: string): QueryAxis[] {
   if (/\b(popular|most used|adopted|downloads)\b/.test(s)) push('popularity', 1, 1);
   if (axes.length === 0) push('intelligence', 1, 1); // default: "best"
   return axes;
+}
+
+/**
+ * Hard cost prefilter for cost-sensitive queries (user directive from the
+ * adversarial review): when the query says cheap/affordable/budget/under $X,
+ * expensive models are EXCLUDED outright — cost becomes a constraint, not a
+ * tiebreaker. Threshold: under $1/1M out, or the 40th percentile if that's
+ * stricter. Returns the filtered list.
+ */
+export function applyCostPrefilter(models: ModelEntry[], query: string): ModelEntry[] {
+  const s = query.toLowerCase();
+  const costSensitive =
+    /\b(cheap|cheapest|affordable|budget|value|low.cost)\b/.test(s) ||
+    /\bunder\s+\$?\d/.test(s) || /\bunder\s+\$\d/.test(s);
+  if (!costSensitive) return models;
+
+  const costOut = (m: ModelEntry): number => parseFloat(m.pricing.completion);
+  const priced = models
+    .map((m) => ({ m, c: costOut(m) }))
+    .filter((x) => Number.isFinite(x.c) && x.c > 0)
+    .sort((a, b) => a.c - b.c);
+  if (priced.length === 0) return models;
+
+  // threshold: min($1/1M, 40th percentile)
+  const p40 = priced[Math.floor(priced.length * 0.4)].c;
+  const cap = Math.min(1 / 1_000_000, p40); // per-token
+  const keep = new Set(priced.filter((x) => x.c <= cap).map((x) => x.m.id));
+  const out = models.filter((m) => keep.has(m.id));
+  return out.length >= 3 ? out : models; // never collapse to nothing
 }

@@ -130,7 +130,10 @@ export function formatPerToken(perToken: string | undefined): string {
   const n = parseFloat(perToken);
   if (!isFinite(n)) return '—';
   if (n === 0) return 'Free';
-  return `$${n.toExponential(4)}`;
+  // readable decimal, never scientific notation
+  if (n >= 1) return `$${n.toFixed(3)}`;
+  if (n >= 0.01) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(8)}`;
 }
 
 export function formatContext(tokens: number): string {

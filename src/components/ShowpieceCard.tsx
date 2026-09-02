@@ -134,7 +134,7 @@ export function ShowpieceCard({
             <Ring label="Elo" value={elo} max={1400} showAsIs index={index} />
           </>
         ) : (
-          <div className="nobench">No benchmark data yet — fetchable</div>
+          <div className="nobench">Benchmarks pending</div>
         )}
       </div>
 

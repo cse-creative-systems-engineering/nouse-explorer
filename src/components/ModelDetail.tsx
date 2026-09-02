@@ -29,7 +29,7 @@ function PricingCell({ label, value }: { label: string; value?: string }) {
     <div className="kv">
       <span className="kv-label">{label}</span>
       <span className="kv-value big">{formatUsd(perM)} <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}>/ 1M</span></span>
-      <span className="kv-value" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatPerToken(value)} / tok</span>
+      <span className="kv-per-token">{formatPerToken(value)} / token</span>
     </div>
   );
 }
@@ -159,7 +159,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
               </div>
               <div className="kv">
                 <span className="kv-label">Instruct type</span>
-                <span className="kv-value">{arch?.instruct_type ?? '—'}</span>
+                <span className="kv-value">{arch?.instruct_type ?? 'not provided'}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Input modalities</span>
@@ -182,10 +182,12 @@ export function ModelDetail({ model }: ModelDetailProps) {
               <div className="kv">
                 <span className="kv-label">Context length</span>
                 <span className="kv-value big">{formatContext(model.context_length)}</span>
+                <span className="kv-per-token">catalog</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Provider max context</span>
                 <span className="kv-value big">{formatContext(model.top_provider?.context_length ?? 0)}</span>
+                <span className="kv-per-token">provider limit</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Max completion</span>
@@ -202,7 +204,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
             <h3 className="modal-section-title">Benchmarks <span className="badge" style={{ marginLeft: 6 }}>embedded</span></h3>
             {!hasBench && (
               <div style={{ padding: '12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.20)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                No benchmark data — external scoring sources not fetched in this MVP.
+                Benchmarks pending — the research engine will fetch these from external sources.
               </div>
             )}
             {hasBench && aa && (

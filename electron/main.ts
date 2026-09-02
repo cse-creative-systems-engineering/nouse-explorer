@@ -101,6 +101,38 @@ ipcMain.handle('research:metrics', () => {
   return byModel;
 });
 
+/**
+ * Research-driven axes (user directive 2026-09-02): the chips a user can
+ * filter/rank by are DERIVED from what the research engine has actually
+ * gathered — a metric with data becomes an available axis; a metric with
+ * zero coverage is returned as pending so the UI can show a disabled chip
+ * ("waiting for research") that lights up when the batch lands.
+ */
+ipcMain.handle('research:axes', () => {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT metric, COUNT(DISTINCT model_id) AS n FROM metric_observations GROUP BY metric`,
+    )
+    .all() as Array<{ metric: string; n: number }>;
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.metric] = r.n;
+
+  const AXIS_DEFS: Array<{ metric: string; id: string; label: string; dir: 'desc' | 'asc' }> = [
+    { metric: 'hf_downloads', id: 'popular', label: 'Popular', dir: 'desc' },
+    { metric: 'median_output_tokens_per_second', id: 'speed', label: 'Speed', dir: 'desc' },
+    { metric: 'median_time_to_first_token_seconds', id: 'latency', label: 'Low latency', dir: 'asc' },
+    { metric: 'scicode', id: 'scicode', label: 'SciCode', dir: 'desc' },
+    { metric: 'livecodebench', id: 'livecodebench', label: 'LiveCodeBench', dir: 'desc' },
+    { metric: 'mmlu_pro', id: 'mmlu', label: 'MMLU-Pro', dir: 'desc' },
+  ];
+
+  return AXIS_DEFS.map((a) => {
+    const n = counts[a.metric] ?? 0;
+    return { id: a.id, label: a.label, dir: a.dir, metric: a.metric, count: n, pending: n === 0 };
+  });
+});
+
 // Broadcast progress to the renderer
 onProgress((p) => {
   win?.webContents.send('research:progress', p);

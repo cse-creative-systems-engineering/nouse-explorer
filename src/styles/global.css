@@ -254,3 +254,60 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .magic-scores{display:flex;gap:8px;flex:none}
 .magic-score{font-size:9.5px;color:var(--text2);font-family:'JetBrains Mono';background:var(--glass2);border-radius:6px;padding:2px 6px;white-space:nowrap}
 .magic-total{font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:var(--accent);flex:none;min-width:34px;text-align:right}
+
+/* ── toolbar grouping (F8) ──────────────────────────── */
+.deck-group{display:flex;align-items:center;gap:12px}
+.deck-utils{gap:10px;margin-left:auto}
+.deck-divider{width:1px;height:26px;background:var(--border);margin:0 4px;flex:none}
+.search-clear{border:none;background:var(--glass2);color:var(--text2);width:20px;height:20px;border-radius:6px;cursor:pointer;font-size:10px;display:grid;place-items:center;flex:none;transition:all .15s}
+.search-clear:hover{background:rgba(255,255,255,.18);color:var(--text)}
+
+/* ── table view (F1) ───────────────────────────────── */
+.table-wrap{margin:0 28px 24px}
+.table-scroll{overflow:auto;max-height:100%;border:1px solid var(--border);border-radius:14px;background:var(--glass);backdrop-filter:blur(20px)}
+.table{width:100%;border-collapse:collapse;font-size:12.5px}
+.table thead th{position:sticky;top:0;background:rgba(10,10,32,.92);backdrop-filter:blur(16px);text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;z-index:2}
+.table thead th.sortable:hover{color:var(--text)}
+.table tbody td{padding:8px 12px;border-bottom:1px solid rgba(245,245,245,.05);white-space:nowrap}
+.table tbody tr{cursor:pointer;transition:background .12s}
+.table tbody tr:hover{background:rgba(110,110,255,.07)}
+.cell-name{font-weight:600;color:var(--text)}
+.cell-id{font-size:10px;color:var(--text3);font-family:'JetBrains Mono'}
+.cell-provider{font-size:10.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cell-num{font-family:'JetBrains Mono';font-size:12px;color:var(--text2)}
+.chev{font-size:9px;margin-left:4px;opacity:.35;transition:opacity .15s}
+.chev.up,.chev.down{opacity:1;color:var(--accent)}
+
+/* ── empty state (F9) ──────────────────────────────── */
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px 20px;color:var(--text3);font-size:13px}
+.empty-state .btn{margin-top:4px}
+
+/* ── scroll affordance (F4) ────────────────────────── */
+.results{position:relative}
+.results-fade{position:sticky;bottom:0;left:0;right:0;height:56px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--bg) 88%)}
+.scroll-hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;
+  font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:600;color:var(--text3);
+  background:var(--glass);border:1px solid var(--border);border-radius:999px;padding:5px 14px;
+  backdrop-filter:blur(14px);pointer-events:none;animation:hintin .6s .8s var(--ease) both}
+@keyframes hintin{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%)}}
+.nobench{cursor:default}
+
+/* modal per-token line — separate, not run-together (F7) */
+.kv-per-token{display:block;font-family:'JetBrains Mono';font-size:10.5px;color:var(--text3);margin-top:3px;letter-spacing:.2px}
+
+/* ── filter row: constraint + rank chips (toggle-driven ranking) ── */
+.deck-filters{flex-wrap:wrap;gap:10px 14px;padding-top:2px}
+.filter-label{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin-right:2px}
+.constraint-chip,.rank-chip{border:1px solid var(--border);background:var(--glass);color:var(--text2);border-radius:999px;
+  padding:5px 13px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .18s var(--ease);font-family:'Sora'}
+.constraint-chip:hover,.rank-chip:hover{border-color:rgba(110,110,255,.45);color:var(--text)}
+.constraint-chip.on{background:linear-gradient(135deg,rgba(110,110,255,.22),rgba(110,110,255,.08));border-color:rgba(110,110,255,.55);color:var(--text);box-shadow:0 0 14px rgba(110,110,255,.14)}
+.rank-chip.on{background:linear-gradient(135deg,rgba(237,255,69,.18),rgba(237,255,69,.06));border-color:rgba(237,255,69,.5);color:var(--text);box-shadow:0 0 14px rgba(237,255,69,.14)}
+.rank-caption{font-size:11.5px;color:var(--text3);font-weight:500;letter-spacing:.2px}
+
+/* pending research chip — disabled until the background research lands (user directive: research results determine available constraints) */
+.rank-chip.pending{opacity:.45;border-style:dashed;cursor:not-allowed}
+.rank-chip.pending:hover{border-color:var(--border);color:var(--text2)}
+.chip-wait{font-size:10px;margin-left:4px;color:var(--text3);animation:chipwait 1.4s ease-in-out infinite}
+@keyframes chipwait{0%,100%{opacity:.4}50%{opacity:1}}
