@@ -33,4 +33,18 @@ contextBridge.exposeInMainWorld('nouse', {
       return () => ipcRenderer.removeListener('research:progress', listener);
     },
   },
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get') as Promise<AppSettings>,
+    setSecret: (name: string, value: string) => ipcRenderer.invoke('settings:set-secret', name, value) as Promise<{ ok: boolean; view?: AppSettings }>,
+    setDistiller: (model: string) => ipcRenderer.invoke('settings:set-distiller', model) as Promise<{ ok: boolean; view?: AppSettings }>,
+  },
 });
+
+export interface AppSettings {
+  nousApiKeySet: boolean;
+  nousApiKeyMasked: string | null;
+  aaApiKeySet: boolean;
+  aaApiKeyMasked: string | null;
+  distillerModel: string;
+  encryptionAvailable: boolean;
+}

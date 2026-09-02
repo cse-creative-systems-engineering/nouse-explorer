@@ -9,6 +9,15 @@ export interface ResearchAxis {
   pending: boolean;
 }
 
+export interface AppSettings {
+  nousApiKeySet: boolean;
+  nousApiKeyMasked: string | null;
+  aaApiKeySet: boolean;
+  aaApiKeyMasked: string | null;
+  distillerModel: string;
+  encryptionAvailable: boolean;
+}
+
 export interface NouseBridge {
   minimize: () => void;
   maximize: () => void;
@@ -19,6 +28,11 @@ export interface NouseBridge {
     getMetrics: () => Promise<Record<string, Record<string, number>>>;
     getAxes: () => Promise<ResearchAxis[]>;
     onProgress: (cb: (p: ResearchProgress) => void) => () => void;
+  };
+  settings: {
+    get: () => Promise<AppSettings>;
+    setSecret: (name: string, value: string) => Promise<{ ok: boolean; view?: AppSettings }>;
+    setDistiller: (model: string) => Promise<{ ok: boolean; view?: AppSettings }>;
   };
 }
 

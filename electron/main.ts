@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb, upsertProfile } from './research/db.js';
 import { onProgress, runQueue, syncCatalog } from './research/queue.js';
+import { getSettingsView, setDistillerModel, setSecret } from './research/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,6 +132,22 @@ ipcMain.handle('research:axes', () => {
     const n = counts[a.metric] ?? 0;
     return { id: a.id, label: a.label, dir: a.dir, metric: a.metric, count: n, pending: n === 0 };
   });
+});
+
+// --- settings IPC ---
+ipcMain.handle('settings:get', () => getSettingsView());
+
+ipcMain.handle('settings:set-secret', (_e, name: string, value: string) => {
+  if (typeof name !== 'string' || typeof value !== 'string') return { ok: false };
+  if (!['nous_api_key', 'aa_api_key'].includes(name)) return { ok: false };
+  setSecret(name, value);
+  return { ok: true, view: getSettingsView() };
+});
+
+ipcMain.handle('settings:set-distiller', (_e, model: string) => {
+  if (typeof model !== 'string' || !model.includes('/')) return { ok: false };
+  setDistillerModel(model);
+  return { ok: true, view: getSettingsView() };
 });
 
 // Broadcast progress to the renderer

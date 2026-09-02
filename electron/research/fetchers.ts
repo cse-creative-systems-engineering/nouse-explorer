@@ -85,16 +85,16 @@ let aaFetchedAt = 0;
 const AA_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Fetch the free AA data API once per day, cache in-memory. */
-export async function artificialAnalysis(): Promise<Array<Record<string, unknown>>> {
+/** Fetch the free AA data API once per day, cached in-memory. Pass the AA API key when available. */
+export async function artificialAnalysis(apiKey?: string | null): Promise<Array<Record<string, unknown>>> {
   const now = Date.now();
   if (aaCache && now - aaFetchedAt < AA_TTL_MS) return aaCache;
   try {
-    const res = await fetch(AA_URL, {
-      headers: { 'User-Agent': 'NouseExplorer/0.1' },
-      signal: AbortSignal.timeout(20000),
-    });
+    const headers: Record<string, string> = { 'User-Agent': 'NouseExplorer/0.1' };
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    const res = await fetch(AA_URL, { headers, signal: AbortSignal.timeout(20000) });
     if (res.status === 401) {
-      // Requires an API key (settings page later) — degrade gracefully, don't spam.
+      // Requires an API key (settings page) — degrade gracefully, don't spam.
       console.error('[research] Artificial Analysis API needs a key (401) — skipping AA tier');
       aaCache = [];
       aaFetchedAt = now;

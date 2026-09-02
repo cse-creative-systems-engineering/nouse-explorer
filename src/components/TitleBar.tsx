@@ -7,7 +7,7 @@ interface NouseBridge {
 }
 const nouse: NouseBridge | undefined = (window as { nouse?: NouseBridge }).nouse;
 
-export function TitleBar() {
+export function TitleBar({ onOpenSettings }: { onOpenSettings?: () => void }) {
   return (
     <div className="titlebar">
       <div className="brandmark">
@@ -18,6 +18,11 @@ export function TitleBar() {
         </div>
       </div>
       <span className="tb-spacer" />
+      {onOpenSettings && (
+        <button type="button" className="tbtn" aria-label="Settings" onClick={onOpenSettings} title="Settings">
+          ⚙
+        </button>
+      )}
       {nouse && (
         <>
           <button type="button" className="tbtn" aria-label="Minimize" onClick={() => nouse.minimize()}>–</button>

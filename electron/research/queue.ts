@@ -1,6 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { enqueue, getDb, queueSnapshot } from './db.js';
 import { aaMetrics, artificialAnalysis, matchAaRecord, persistMetrics, providerFirst } from './fetchers.js';
+import { getSecret } from './settings.js';
 
 export interface ResearchProgress {
   running: boolean;
@@ -51,7 +52,7 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
     // Load AA snapshot once per run (daily TTL internally); unavailable → [] gracefully.
     let aa: Array<Record<string, unknown>> = [];
     try {
-      aa = await artificialAnalysis();
+      aa = await artificialAnalysis(getSecret('aa_api_key'));
     } catch {
       aa = [];
     }

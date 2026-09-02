@@ -9,6 +9,7 @@ import { GlassToggle } from './GlassToggle';
 import { ShowpieceCard } from './ShowpieceCard';
 import { ModelTable } from './ModelTable';
 import { ModelDetail } from './ModelDetail';
+import { SettingsPanel } from './SettingsPanel';
 import { nouse, type ResearchAxis } from '../lib/nouse';
 
 const USECASES: UsecaseDef[] = [
@@ -88,6 +89,7 @@ export function ModelExplorer() {
   const [rank, setRank] = useState<string>('coding');
   const [extra, setExtra] = useState<Record<string, Record<string, number>>>({});
   const [researchedAxes, setResearchedAxes] = useState<ResearchAxis[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDone = useRef(0);
 
@@ -207,7 +209,7 @@ export function ModelExplorer() {
 
   return (
     <div className="app">
-      <TitleBar />
+      <TitleBar onOpenSettings={() => setSettingsOpen(true)} />
 
       <div className="hero">
         <div>
@@ -373,6 +375,7 @@ export function ModelExplorer() {
         </div>
       )}
 
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       {selected && <ModelDetail model={selected} />}
     </div>
   );
