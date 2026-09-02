@@ -1,164 +1,171 @@
+import { useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import type { SortKey } from '../lib/types';
-import {
-  $error,
-  $filtered,
-  $filters,
-  $loading,
-  $models,
-  $selectedId,
-  $sortDir,
-  $sortKey,
-  $view,
-} from '../lib/store';
-import { defaultFilters } from '../lib/filters';
-import { useModels } from '../hooks/useModels';
-import { StatsHeader } from './StatsHeader';
-import { RefreshControl } from './RefreshControl';
-import { Filters } from './Filters';
-import { ModelCard } from './ModelCard';
-import { ModelTable } from './ModelTable';
+import { $models, $loading, $error, $selectedId, $view, $autoRefresh, $stats } from '../lib/store';
+import { TitleBar } from './TitleBar';
+import { HeroStats } from './HeroStats';
+import { UsecasePills, type UsecaseDef } from './UsecasePills';
+import { GlassToggle } from './GlassToggle';
+import { ShowpieceCard } from './ShowpieceCard';
 import { ModelDetail } from './ModelDetail';
-import { Glass } from './Glass';
-import { Dropdown } from './Dropdown';
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: 'name', label: 'Name' },
-  { value: 'provider', label: 'Provider' },
-  { value: 'prompt', label: 'Input price / 1M' },
-  { value: 'completion', label: 'Output price / 1M' },
-  { value: 'discount', label: 'Discount %' },
-  { value: 'context', label: 'Context length' },
-  { value: 'coding', label: 'Coding index' },
-  { value: 'intelligence', label: 'Intelligence index' },
-  { value: 'agentic', label: 'Agentic index' },
+const USECASES: UsecaseDef[] = [
+  { id: 'all', label: '✦ All' },
+  { id: 'coding', label: '⌘ Coding' },
+  { id: 'research', label: '◉ Research' },
+  { id: 'free', label: '◇ Free' },
+  { id: 'vision', label: '◑ Vision' },
 ];
 
-function Skeleton() {
-  return (
-    <div className="skeleton-grid">
-      {Array.from({ length: 12 }).map((_, idx) => (
-        <div key={idx} className="skeleton-card">
-          <div className="skeleton-line long" />
-          <div className="skeleton-line med" />
-          <div className="skeleton-line short" />
-          <div className="skeleton-line med" />
-          <div className="skeleton-line long" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function ModelExplorer() {
-  const { refresh } = useModels();
   const models = useStore($models);
-  const filtered = useStore($filtered);
   const loading = useStore($loading);
   const error = useStore($error);
   const view = useStore($view);
-  const sortKey = useStore($sortKey);
-  const sortDir = useStore($sortDir);
+  const autoRefresh = useStore($autoRefresh);
+  const stats = useStore($stats);
   const selectedId = useStore($selectedId);
-  const selected = models.find((m) => m.id === selectedId);
+
+  const [usecase, setUsecase] = useState('all');
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    let list = models;
+    if (usecase === 'coding') {
+      list = list
+        .filter((m) => m.benchmarks?.artificial_analysis?.coding_index != null)
+        .sort(
+          (a, b) =>
+            (b.benchmarks?.artificial_analysis?.coding_index ?? 0) -
+            (a.benchmarks?.artificial_analysis?.coding_index ?? 0),
+        );
+    } else if (usecase === 'research') {
+      list = list
+        .filter((m) => m.benchmarks?.artificial_analysis?.intelligence_index != null)
+        .sort(
+          (a, b) =>
+            (b.benchmarks?.artificial_analysis?.intelligence_index ?? 0) -
+            (a.benchmarks?.artificial_analysis?.intelligence_index ?? 0),
+        );
+    } else if (usecase === 'free') {
+      const isFree = (m: (typeof models)[number]) => {
+        const p = parseFloat(m.pricing.prompt);
+        const c = parseFloat(m.pricing.completion);
+        return (isFinite(p) && p === 0) && (isFinite(c) && c === 0);
+      };
+      list = list.filter(isFree);
+    } else if (usecase === 'vision') {
+      list = list.filter((m) => (m.architecture?.input_modalities ?? []).includes('image'));
+    }
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (m) =>
+          m.id.toLowerCase().includes(q) ||
+          (m.name ?? '').toLowerCase().includes(q) ||
+          m.id.split('/')[0].toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [models, usecase, query]);
+
+  const selected = models.find((m) => m.id === selectedId) ?? null;
 
   return (
-    <div className="app-shell">
-      <div className="app-bg" aria-hidden="true" />
-      <main className="page">
-        <header className="page-header">
-          <div className="brand">
-            <div className="brand-mark" aria-hidden="true">N</div>
-            <div>
-              <h1 className="brand-title">Nous Model Explorer</h1>
-              <p className="brand-sub">Phase 1 MVP · live from inference-api.nousresearch.com</p>
-            </div>
+    <div className="app">
+      <TitleBar />
+
+      <div className="hero">
+        <div>
+          <div className="htitle">
+            Every model. Live prices.
+            <br />
+            <em>Zero surprises.</em>
           </div>
-          <div className="view-toggle" role="tablist" aria-label="View mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === 'cards'}
-              className={view === 'cards' ? 'active' : ''}
-              onClick={() => $view.set('cards')}
-            >
-              Cards
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === 'table'}
-              className={view === 'table' ? 'active' : ''}
-              onClick={() => $view.set('table')}
-            >
-              Table
-            </button>
+          <div className="hsub">The complete Nous Portal catalog — ranked, priced, benchmarked</div>
+        </div>
+        <HeroStats
+          total={stats.total}
+          discounted={stats.discounted}
+          benchmarked={stats.benchmarked}
+          free={stats.free}
+        />
+      </div>
+
+      <div className="deck">
+        <div className="cmdbar">
+          <span className="ic">⌕</span>
+          <input
+            placeholder={`Search ${stats.total} models — name, provider, capability…`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <span className="kbd">⌘K</span>
+        </div>
+        <UsecasePills options={USECASES} value={usecase} onChange={setUsecase} />
+        <GlassToggle
+          on={autoRefresh}
+          onChange={(v) => $autoRefresh.set(v)}
+          label="AUTO-REFRESH"
+        />
+        <div className="vt">
+          <button
+            type="button"
+            className={view === 'cards' ? 'on' : ''}
+            onClick={() => $view.set('cards')}
+          >
+            Cards
+          </button>
+          <button
+            type="button"
+            className={view === 'table' ? 'on' : ''}
+            onClick={() => $view.set('table')}
+          >
+            Table
+          </button>
+        </div>
+      </div>
+
+      <div className="results">
+        {loading && models.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text3)' }}>
+            Loading the catalog…
           </div>
-        </header>
-
-        <StatsHeader />
-        <RefreshControl onRefresh={() => void refresh(true)} />
-        <Filters models={models} />
-
-        <Glass style={{ padding: '12px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-              Showing <strong style={{ color: 'var(--text-primary)' }}>{filtered.length}</strong> of {models.length} models
-            </span>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', minWidth: 220 }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sort</span>
-              <div style={{ flex: 1 }}>
-                <Dropdown
-                  value={sortKey}
-                  onChange={(v) => $sortKey.set(v)}
-                  options={SORT_OPTIONS}
-                  placeholder="Sort by…"
-                />
-              </div>
-              <button
-                type="button"
-                className="btn btn-icon"
-                onClick={() => $sortDir.set(sortDir === 'asc' ? 'desc' : 'asc')}
-                aria-label={`Sort direction: ${sortDir === 'asc' ? 'ascending' : 'descending'}`}
-                title={`Sort direction: ${sortDir === 'asc' ? 'ascending' : 'descending'} — click to toggle`}
-              >
-                {sortDir === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
-          </div>
-        </Glass>
-
-        {loading && models.length === 0 && <Skeleton />}
-
-        {!loading && filtered.length === 0 && (
-          <Glass className="empty">
-            <p>No models match the current filters.</p>
-            <button type="button" className="btn" onClick={() => $filters.set({ ...defaultFilters })}>Reset filters</button>
-          </Glass>
         )}
-
+        {!loading && filtered.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text3)' }}>
+            No models match.
+          </div>
+        )}
         {filtered.length > 0 && view === 'cards' && (
-          <div className="cards-grid stagger" key={`cards-${sortKey}-${sortDir}-${selectedId ?? ''}`}>
-            {filtered.map((m, idx) => (
-              <ModelCard key={m.id} model={m} index={idx} />
+          <div className="grid" key={`${usecase}-${query}`}>
+            {filtered.map((m, i) => (
+              <ShowpieceCard
+                key={m.id}
+                model={m}
+                index={i}
+                onOpen={() => $selectedId.set(m.id)}
+              />
             ))}
           </div>
         )}
-
         {filtered.length > 0 && view === 'table' && (
-          <ModelTable models={filtered} />
-        )}
-
-        {error && models.length > 0 && (
-          <div className="error-banner">
-            Showing cached data — live fetch failed: {error}
+          <div className="grid" key={`t-${usecase}`}>
+            {filtered.slice(0, 120).map((m, i) => (
+              <ShowpieceCard
+                key={m.id}
+                model={m}
+                index={i}
+                onOpen={() => $selectedId.set(m.id)}
+              />
+            ))}
           </div>
         )}
-
-        <footer className="app-foot">
-          Press <kbd style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4 }}>Enter</kbd> on a card to open details · <kbd style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4 }}>Esc</kbd> to close.
-        </footer>
-      </main>
+        {error && models.length > 0 && (
+          <div style={{ padding: '10px 28px', color: 'var(--warn)', fontSize: 12 }}>
+            Live fetch failed — showing cached data: {error}
+          </div>
+        )}
+      </div>
 
       {selected && <ModelDetail model={selected} />}
     </div>

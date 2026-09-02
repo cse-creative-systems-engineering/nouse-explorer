@@ -1,7 +1,9 @@
 node_modules
 dist
 dist-ssr
+dist-electron
 *.local
 .vite
 .DS_Store
-*.log*.tsbuildinfo
+*.log
+*.tsbuildinfo

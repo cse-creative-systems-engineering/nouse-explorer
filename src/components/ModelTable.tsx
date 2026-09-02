@@ -5,7 +5,6 @@ import {
   fmtScore,
   formatContext,
   formatUsd,
-  hasBenchmark,
   isBatch,
   isFreeVariant,
   perMillion,

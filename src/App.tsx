@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { $autoRefresh, $refreshInterval } from './lib/store';
 import { ModelExplorer } from './components/ModelExplorer';
+import { ParticleField } from './components/ParticleField';
 import { useModels } from './hooks/useModels';
 
 export function App() {
@@ -18,5 +19,13 @@ export function App() {
     return () => window.clearInterval(id);
   }, [autoRefresh, refreshInterval, refresh]);
 
-  return <ModelExplorer />;
+  return (
+    <>
+      <ParticleField />
+      <div className="aurora au1" aria-hidden="true" />
+      <div className="aurora au2" aria-hidden="true" />
+      <div className="aurora au3" aria-hidden="true" />
+      <ModelExplorer />
+    </>
+  );
 }
