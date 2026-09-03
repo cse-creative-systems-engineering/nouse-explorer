@@ -1,6 +1,6 @@
-import { useStore } from '@nanostores/react';
-import type { ModelEntry, SortKey } from '../lib/types';
-import { $sortDir, $sortKey, $selectedId } from '../lib/store';
+import { useMemo, useState } from 'react';
+import type { ModelEntry } from '../lib/types';
+import { $selectedId } from '../lib/store';
 import {
   fmtScore,
   formatContext,
@@ -12,6 +12,8 @@ import {
   resolvePricing,
 } from '../lib/pricing';
 import { DiscountBadge } from './DiscountBadge';
+
+type SortKey = 'name' | 'provider' | 'prompt' | 'completion' | 'discount' | 'context' | 'coding' | 'intelligence' | 'agentic';
 
 interface ColumnDef {
   key: SortKey | null;
@@ -32,20 +34,56 @@ const COLUMNS: ColumnDef[] = [
   { key: null, label: '' },
 ];
 
+function valueFor(m: ModelEntry, key: SortKey): number | string | null {
+  const r = resolvePricing(m.pricing);
+  switch (key) {
+    case 'name': return (m.name ?? m.id).toLowerCase();
+    case 'provider': return providerFromId(m.id);
+    case 'prompt': return perMillion(r.prompt);
+    case 'completion': return perMillion(r.completion);
+    case 'discount': {
+      const p = parseFloat(r.prompt);
+      const o = m.pricing.original ? parseFloat(m.pricing.original.prompt) : 0;
+      if (isFinite(p) && isFinite(o) && o > 0 && p < o) return (1 - p / o) * 100;
+      return -1; // no discount sorts last
+    }
+    case 'context': return m.context_length ?? 0;
+    case 'coding': return m.benchmarks?.artificial_analysis?.coding_index ?? -1;
+    case 'intelligence': return m.benchmarks?.artificial_analysis?.intelligence_index ?? -1;
+    case 'agentic': return m.benchmarks?.artificial_analysis?.agentic_index ?? -1;
+  }
+}
+
 interface ModelTableProps {
   models: ModelEntry[];
 }
 
 export function ModelTable({ models }: ModelTableProps) {
-  const sortKey = useStore($sortKey);
-  const sortDir = useStore($sortDir);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return models;
+    return [...models].sort((a, b) => {
+      const va = valueFor(a, sortKey);
+      const vb = valueFor(b, sortKey);
+      // nulls last
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      let cmp: number;
+      if (typeof va === 'string' && typeof vb === 'string') cmp = va.localeCompare(vb);
+      else cmp = (va as number) - (vb as number);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [models, sortKey, sortDir]);
 
   function setSort(key: SortKey) {
-    if ($sortKey.get() === key) {
-      $sortDir.set(sortDir === 'asc' ? 'desc' : 'asc');
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
-      $sortKey.set(key);
-      $sortDir.set('asc');
+      setSortKey(key);
+      setSortDir(key === 'provider' || key === 'name' ? 'asc' : 'desc');
     }
   }
 
@@ -60,17 +98,16 @@ export function ModelTable({ models }: ModelTableProps) {
           <thead>
             <tr>
               {COLUMNS.map((c) => {
-if (!c.key) return <th key={c.label} style={{ width: 90 }} />;
-                  const active = sortKey === c.key;
-                  const colKey = c.key;
-                  return (
-                    <th
-                      key={colKey}
-                      className="sortable"
-                      onClick={() => setSort(colKey)}
-                      style={{ textAlign: c.align ?? 'left' }}
-                      aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                    >
+                if (!c.key) return <th key={c.label} style={{ width: 90 }} />;
+                const active = sortKey === c.key;
+                return (
+                  <th
+                    key={c.key}
+                    className="sortable"
+                    onClick={() => setSort(c.key!)}
+                    style={{ textAlign: c.align ?? 'left' }}
+                    aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
                     {c.label}
                     <span className={`chev ${active ? (sortDir === 'asc' ? 'up' : 'down') : ''}`}>▾</span>
                   </th>
@@ -79,7 +116,7 @@ if (!c.key) return <th key={c.label} style={{ width: 90 }} />;
             </tr>
           </thead>
           <tbody>
-            {models.map((m) => {
+            {sorted.map((m) => {
               const r = resolvePricing(m.pricing);
               const prompt = perMillion(r.prompt);
               const completion = perMillion(r.completion);
