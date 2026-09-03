@@ -27,7 +27,7 @@ function createWindow(): void {
     backgroundColor: '#0a0a20',
     show: false,
     title: 'Nouse Explorer',
-    icon: path.join(__dirname, '../build/icon.png'),
+    icon: path.join(__dirname, '../../build/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
