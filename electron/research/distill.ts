@@ -60,7 +60,16 @@ Where a use case has no supportable signal, use signal 0, confidence 0, and an e
 
 function parseProfile(raw: string): DistilledProfile | null {
   try {
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    // Tolerate leading whitespace/newlines and ```json ... ``` fences
+    let cleaned = raw.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    // If there's still non-JSON noise around the object, extract the first {...}
+    if (!cleaned.startsWith('{')) {
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start === -1 || end === -1 || end <= start) return null;
+      cleaned = cleaned.slice(start, end + 1);
+    }
     const j = JSON.parse(cleaned) as {
       summary?: string;
       strengths?: ProfileClaim[];
@@ -121,21 +130,28 @@ export async function distillProfile(
         model,
         messages: [{ role: 'user', content: buildPrompt(modelId, name, evidence) }],
         temperature: 0.2,
-        max_tokens: 2000,
+        max_tokens: 5000,
         // Ling-3.0-Flash-Fin is a thinking model; without this it spends its
-        // whole budget on reasoning and returns empty content.
+        // whole budget on reasoning and returns empty content. Note: even with
+        // thinking disabled it still burns ~1600-2000 tokens on reasoning, so
+        // the budget must be large enough for reasoning + the full JSON.
         thinking: { type: 'disabled' },
       }),
       signal: AbortSignal.timeout(60000),
     });
     if (!res.ok) {
-      console.error('[research] distiller HTTP', res.status);
+      console.error('[research] distiller HTTP', res.status, await res.text().catch(() => '').then((t) => t.slice(0, 200)));
       return null;
     }
     const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = j.choices?.[0]?.message?.content;
-    if (!content) return null;
-    return parseProfile(content);
+    if (!content) {
+      console.error('[research] distiller empty content for', modelId);
+      return null;
+    }
+    const parsed = parseProfile(content);
+    if (!parsed) console.error('[research] distiller parse failed for', modelId, '| content head:', content.slice(0, 120));
+    return parsed;
   } catch (e) {
     console.error('[research] distiller failed', (e as Error).message);
     return null;

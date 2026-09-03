@@ -9,7 +9,7 @@ export interface Metric {
   method: string; // 'provider-api' | 'artificial-analysis' | 'embedded'
 }
 
-const AA_URL = 'https://artificialanalysis.ai/api/v2/language/models/free';
+const AA_URL = 'https://artificialanalysis.ai/api/v2/data/llms/models'; // docs: /api/v2/data/llms/models, x-api-key header
 
 /** Provider-first rule: query the model's own provider API before aggregators. */
 const PROVIDER_SOURCES: Record<string, { url: (model: string) => string; kind: string }> = {
@@ -84,6 +84,12 @@ let aaCache: Array<Record<string, unknown>> | null = null;
 let aaFetchedAt = 0;
 const AA_TTL_MS = 24 * 60 * 60 * 1000;
 
+/** Drop the cached AA snapshot so the next queue run refetches (e.g. after a key save). */
+export function invalidateAaCache(): void {
+  aaCache = null;
+  aaFetchedAt = 0;
+}
+
 /** Fetch the free AA data API once per day, cache in-memory. */
 /** Fetch the free AA data API once per day, cached in-memory. Pass the AA API key when available. */
 export async function artificialAnalysis(apiKey?: string | null): Promise<Array<Record<string, unknown>>> {
@@ -91,7 +97,7 @@ export async function artificialAnalysis(apiKey?: string | null): Promise<Array<
   if (aaCache && now - aaFetchedAt < AA_TTL_MS) return aaCache;
   try {
     const headers: Record<string, string> = { 'User-Agent': 'NouseExplorer/0.1' };
-    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    if (apiKey) headers['x-api-key'] = apiKey;
     const res = await fetch(AA_URL, { headers, signal: AbortSignal.timeout(20000) });
     if (res.status === 401) {
       // Requires an API key (settings page) — degrade gracefully, don't spam.

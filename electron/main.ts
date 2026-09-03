@@ -1,9 +1,10 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDb, upsertProfile } from './research/db.js';
+import { getDb, upsertProfile, enqueue } from './research/db.js';
 import { onProgress, runQueue, syncCatalog } from './research/queue.js';
-import { getSettingsView, setDistillerModel, setSecret } from './research/settings.js';
+import { getSettingsView, setDistillerModel, setSecret, getSecret } from './research/settings.js';
+import { invalidateAaCache } from './research/fetchers.js';
 import {
   alertHistory, acknowledgeAllAlerts, checkWatches, createWatch, deleteWatch,
   listWatches, updateWatch, type Watch,
@@ -146,6 +147,33 @@ ipcMain.handle('settings:set-secret', (_e, name: string, value: string) => {
   if (typeof name !== 'string' || typeof value !== 'string') return { ok: false };
   if (!['nous_api_key', 'aa_api_key'].includes(name)) return { ok: false };
   setSecret(name, value);
+
+  // Re-enqueue work that was previously skipped for lack of a key, then
+  // restart the queue so the new capability actually gets applied:
+  // - Nous key → distill profiles for models that have none yet
+  // - AA key  → fetch AA metrics (speed/latency/benchmarks) for models
+  //             that were marked done before the key existed
+  const db = getDb();
+  if (name === 'nous_api_key') {
+    const rows = db
+      .prepare(`SELECT id FROM model_profiles WHERE profile_json IS NULL OR profile_json = ''`)
+      .all() as Array<{ id: string }>;
+    for (const r of rows) enqueue(db, r.id, 3, 1); // tier 3, priority
+  } else if (name === 'aa_api_key') {
+    // Drop the cached 401-empty AA snapshot so the queue refetches with the key
+    invalidateAaCache();
+    const rows = db
+      .prepare(
+        `SELECT id FROM model_profiles
+         WHERE id NOT IN (
+           SELECT model_id FROM metric_observations
+           WHERE metric = 'median_output_tokens_per_second'
+         )`,
+      )
+      .all() as Array<{ id: string }>;
+    for (const r of rows) enqueue(db, r.id, 1, 0);
+  }
+  void runQueue();
   return { ok: true, view: getSettingsView() };
 });
 
@@ -247,12 +275,42 @@ onProgress((p) => {
   win?.webContents.send('research:progress', p);
 });
 
+// On launch: if keys are already stored, catch up on work that was skipped
+// before they existed (distillation + AA metrics for models marked done).
+function catchUpResearch(): void {
+  const db = getDb();
+  const nousKey = getSecret('nous_api_key');
+  const aaKey = getSecret('aa_api_key');
+  if (!nousKey && !aaKey) return;
+
+  if (nousKey) {
+    const rows = db
+      .prepare(`SELECT id FROM model_profiles WHERE profile_json IS NULL OR profile_json = ''`)
+      .all() as Array<{ id: string }>;
+    for (const r of rows) enqueue(db, r.id, 3, 1);
+  }
+  if (aaKey) {
+    const rows = db
+      .prepare(
+        `SELECT id FROM model_profiles
+         WHERE id NOT IN (
+           SELECT model_id FROM metric_observations
+           WHERE metric = 'median_output_tokens_per_second'
+         )`,
+      )
+      .all() as Array<{ id: string }>;
+    for (const r of rows) enqueue(db, r.id, 1, 0);
+  }
+  void runQueue();
+}
+
 app.whenReady().then(() => {
   app.setName('Nouse Explorer');
   // Proper per-app data dir (defaults to 'Electron' otherwise)
   app.setPath('userData', path.join(app.getPath('appData'), 'nouse-explorer'));
   createWindow();
   startAlertScheduler();
+  setTimeout(catchUpResearch, 5000); // after catalog sync settles
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

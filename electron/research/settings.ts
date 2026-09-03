@@ -34,12 +34,18 @@ function setSetting(key: string, value: string): void {
 const SECRET_PREFIX = 'enc:';
 
 export function setSecret(name: string, value: string): void {
-  if (safeStorage.isEncryptionAvailable()) {
-    setSetting(`secret:${name}`, SECRET_PREFIX + safeStorage.encryptString(value).toString('base64'));
-  } else {
-    // No OS keychain — store plaintext but flag it (still local-only).
-    setSetting(`secret:${name}`, 'plain:' + value);
+  let stored = 'plain:' + value;
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      stored = SECRET_PREFIX + safeStorage.encryptString(value).toString('base64');
+    }
+  } catch (e) {
+    // safeStorage backend can fail at call time even when isEncryptionAvailable
+    // reported true (e.g. keyring locked) — never let the save die.
+    console.error('[settings] safeStorage failed, falling back to plaintext', e);
+    stored = 'plain:' + value;
   }
+  setSetting(`secret:${name}`, stored);
 }
 
 export function getSecret(name: string): string | null {
@@ -48,7 +54,8 @@ export function getSecret(name: string): string | null {
   if (raw.startsWith(SECRET_PREFIX)) {
     try {
       return safeStorage.decryptString(Buffer.from(raw.slice(SECRET_PREFIX.length), 'base64'));
-    } catch {
+    } catch (e) {
+      console.error('[settings] decrypt failed for', name, e);
       return null;
     }
   }
