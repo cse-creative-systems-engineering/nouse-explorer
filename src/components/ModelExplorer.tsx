@@ -46,6 +46,7 @@ const EMBEDDED_RANKS: RankAxis[] = [
 ];
 
 function isFree(m: ModelEntry): boolean {
+  if (m.id.endsWith(':free')) return true;
   const p = parseFloat(m.pricing.prompt);
   const c = parseFloat(m.pricing.completion);
   return (isFinite(p) && p === 0) && (isFinite(c) && c === 0);
@@ -196,19 +197,20 @@ export function ModelExplorer() {
     return list;
   }, [models, usecase, query, constraints, rank, rankAxes, extra]);
 
+  // Catalog totals — always the real numbers, independent of filters
   const stats = useMemo(() => {
     let free = 0;
     let discounted = 0;
     let benchmarked = 0;
-    for (const m of filtered) {
+    for (const m of models) {
       if (isFree(m)) free += 1;
       const p = parseFloat(m.pricing.prompt);
       const orig = m.pricing.original ? parseFloat(m.pricing.original.prompt) : 0;
       if (isFinite(p) && isFinite(orig) && orig > 0 && p < orig) discounted += 1;
       if (hasBench(m)) benchmarked += 1;
     }
-    return { total: filtered.length, free, discounted, benchmarked };
-  }, [filtered]);
+    return { total: models.length, free, discounted, benchmarked };
+  }, [models]);
 
   const activeRankLabel =
     usecase !== 'all'
@@ -389,7 +391,7 @@ export function ModelExplorer() {
       </div>
       {filtered.length > 8 && (
         <div className="scroll-hint">
-          {filtered.length} models ranked by {activeRankLabel.toLowerCase()} — scroll for more
+          Showing {filtered.length} of {models.length} models — ranked by {activeRankLabel.toLowerCase()} · scroll for more
         </div>
       )}
 
