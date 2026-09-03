@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Nouse Explorer — Nod E</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+
+  :root { --ink: #0c0e4a; --cobalt: #0000ff; --cobalt-d: #1a1aff; --cobalt-p: #c2c6f7;
+          --paper: #f6f1e6; --rule: #0000ff; --cream: #efe7d2; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { padding: 32px 48px 80px; }
+  .page-head { display: flex; gap: 32px; align-items: flex-end; border-bottom: 1.5px solid var(--rule);
+    padding-bottom: 16px; margin-bottom: 24px; }
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+    color: var(--cobalt); text-transform: uppercase; }
+  .masthead { font-family: 'DM Serif Display', serif; font-size: 56px; line-height: 0.95;
+    color: var(--ink); margin: 8px 0 4px; letter-spacing: -0.01em; }
+  .masthead em { font-style: italic; color: var(--cobalt); }
+  .subhead { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 18px;
+    color: var(--ink); max-width: 56ch; margin: 0; }
+  .head-art img { width: 100%; display: block; }
+  .filterbar { display: grid; grid-template-columns: 1fr auto auto; gap: 12px;
+    margin-bottom: 18px; }
+  .search { position: relative; }
+  .search .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--cobalt); font-size: 16px; }
+  .search input { width: 100%; padding: 12px 16px 12px 38px; border: 1px solid var(--cobalt-d);
+    background: transparent; color: var(--ink); font-family: 'DM Mono', monospace;
+    font-size: 13px; outline: none; }
+  .search input:focus { border-color: var(--cobalt); background: rgba(0,0,255,0.04); }
+  .dropdown { position: relative; }
+  .dd-btn { background: transparent; border: 1px solid var(--cobalt-d); color: var(--ink);
+    padding: 12px 38px 12px 14px; font-family: 'DM Mono', monospace; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; min-width: 240px;
+    text-align: left; }
+  .dd-btn .val { color: var(--cobalt); text-transform: none; letter-spacing: 0; }
+  .dd-btn .caret { position: absolute; right: 14px; color: var(--cobalt); }
+  .dd-menu { position: absolute; right: 0; top: 100%; min-width: 240px; max-height: 280px;
+    overflow-y: auto; margin: 0; padding: 6px 0; list-style: none; background: var(--paper);
+    border: 1px solid var(--cobalt); display: none; z-index: 5; }
+  .dropdown:hover .dd-menu, .dropdown:focus-within .dd-menu { display: block; }
+  .dd-menu li { padding: 8px 14px; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--ink); cursor: pointer; }
+  .dd-menu li:hover, .dd-menu li.on { background: var(--cobalt); color: var(--paper); }
+  .card { background: var(--cream); border: 1px solid var(--cobalt); padding: 16px;
+    display: flex; flex-direction: column; gap: 8px; }
+  .card-id { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--cobalt); opacity: 0.6; }
+  .card-name { font-family: 'DM Serif Display', serif; font-size: 20px; line-height: 1.05;
+    color: var(--ink); margin: 0; }
+  .card-provider { font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--cobalt); letter-spacing: 0.1em; text-transform: uppercase; }
+  .card-prices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    font-family: 'DM Mono', monospace; }
+  .pr .lbl { display: block; font-size: 9px; color: var(--cobalt); opacity: 0.6;
+    letter-spacing: 0.15em; text-transform: uppercase; }
+  .pr .val { font-size: 14px; color: var(--ink); }
+  .card-ctx { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink);
+    opacity: 0.7; }
+  .card-ctx b { color: var(--cobalt); }
+  .card-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .b { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; border: 1px solid var(--cobalt-d); color: var(--ink);
+    padding: 2px 6px; }
+  .b-free { background: var(--cobalt); color: var(--paper); border-color: var(--cobalt); }
+  .b-discount { border-color: var(--cobalt); color: var(--cobalt); }
+
+
+  body { background: var(--paper); }
+  .crest { display: flex; align-items: center; gap: 24px; }
+  .crest img { width: 200px; height: 100px; image-rendering: pixelated; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px; }
+
+</style>
+</head>
+<body>
+
+  <header class="page-head">
+    <div class="crest">
+      <img src="http://127.0.0.1:8766/nous-hand.png" alt="Nous Hand" />
+      <div>
+        <div class="eyebrow">A Nod, By Way Of Introduction</div>
+        <h1 class="masthead">Nouse <em>Explorer</em></h1>
+        <p class="subhead">The hand of Nous, kept on every page — small, classical, silent. Below: the catalog, ranked by intelligence.</p>
+      </div>
+    </div>
+  </header>
+
+  
+  <div class="filterbar">
+    <div class="search">
+      <span class="ico">⌕</span>
+      <input type="text" placeholder="search 381 models by name, provider, id" />
+    </div>
+    <div class="dropdown">
+      <button class="dd-btn">sort: <span class="val">Intelligence: High to Low</span><span class="caret">⌄</span></button>
+      <ul class="dd-menu"><li>Most Popular</li>
+<li>Coding: High to Low</li>
+<li>Coding: Low to High</li>
+<li>Throughput</li>
+<li>Latency</li>
+<li>Context Length</li>
+<li>Price: Low to High</li>
+<li>Price: High to Low</li>
+<li class="on">Intelligence: High to Low</li>
+<li>Newest</li>
+<li>Daily Usage</li>
+<li>Design Arena ELO</li></ul>
+    </div>
+    <div class="dropdown">
+      <button class="dd-btn">variant: <span class="val">Vision</span><span class="caret">⌄</span></button>
+      <ul class="dd-menu"><li>All Models</li>
+<li>Free</li>
+<li>Batch</li>
+<li class="on">Vision</li>
+<li>Discounted</li>
+<li>Cheap</li>
+<li>Newest</li>
+<li>Researched</li>
+<li>Provider: Anthropic</li>
+<li>Provider: OpenAI</li>
+<li>Provider: Google</li>
+<li>Provider: DeepSeek</li></ul>
+    </div>
+  </div>
+
+  <div class="grid">
+    <article class="card ">
+      <div class="card-id">meta/muse-spark-1.3-contributor</div>
+      <h3 class="card-name">Meta: Muse Spark 1.3 Contributor</h3>
+      <div class="card-provider">Meta</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.08</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.16</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">meta/muse-spark-1.3</div>
+      <h3 class="card-name">Meta: Muse Spark 1.3</h3>
+      <div class="card-provider">Meta</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$1.00</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$3.40</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">google/gemini-3.8-flash</div>
+      <h3 class="card-name">Google: Gemini 3.8 Flash</h3>
+      <div class="card-provider">Google</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.60</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$3.00</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">google/gemini-3.8-flash:batch</div>
+      <h3 class="card-name">Google: Gemini 3.8 Flash (batch)</h3>
+      <div class="card-provider">Google</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.30</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$1.50</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">batch</span><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">anthropic/claude-fable-5.1</div>
+      <h3 class="card-name">Anthropic: Claude Fable 5.1</h3>
+      <div class="card-provider">Anthropic</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$8.00</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$40.00</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">anthropic/claude-fable-5.1:batch</div>
+      <h3 class="card-name">Anthropic: Claude Fable 5.1 (batch)</h3>
+      <div class="card-provider">Anthropic</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$4.00</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$20.00</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file->text</div>
+      <div class="card-badges"><span class="b">batch</span><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">~z-ai/glm-flash-latest</div>
+      <h3 class="card-name">Z.ai: GLM Flash Latest</h3>
+      <div class="card-provider">~Z Ai</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.06</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.20</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1.3M</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">qwen/qwen3.8-flash</div>
+      <h3 class="card-name">Qwen: Qwen3.8 Flash</h3>
+      <div class="card-provider">Qwen</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.12</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.38</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">z-ai/glm-5.3-flash</div>
+      <h3 class="card-name">Z.ai: GLM 5.3 Flash</h3>
+      <div class="card-provider">Z Ai</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.06</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.20</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1.3M</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">z-ai/glm-5.3-flash:batch</div>
+      <h3 class="card-name">Z.ai: GLM 5.3 Flash (batch)</h3>
+      <div class="card-provider">Z Ai</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.12</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.40</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">batch</span><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">meta/muse-spark-1.2-contributor</div>
+      <h3 class="card-name">Meta: Muse Spark 1.2 Contributor</h3>
+      <div class="card-provider">Meta</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.08</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.16</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">deepseek/deepseek-v4-flash-vision-exp</div>
+      <h3 class="card-name">DeepSeek: DeepSeek V4 Flash Vision Exp</h3>
+      <div class="card-provider">Deepseek</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.18</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$0.53</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">qwen/qwen3.8-27b</div>
+      <h3 class="card-name">Qwen: Qwen3.8 27B</h3>
+      <div class="card-provider">Qwen</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.34</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$2.04</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">google/gemini-3.7-flash</div>
+      <h3 class="card-name">Google: Gemini 3.7 Flash</h3>
+      <div class="card-provider">Google</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.60</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$3.00</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">google/gemini-3.7-flash:batch</div>
+      <h3 class="card-name">Google: Gemini 3.7 Flash (batch)</h3>
+      <div class="card-provider">Google</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.30</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$1.50</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>1M</b> · text+image+file+audio+video->text</div>
+      <div class="card-badges"><span class="b">batch</span><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">bytedance-seed/seed-2-1-turbo</div>
+      <h3 class="card-name">ByteDance Seed: Seed 2.1 Turbo</h3>
+      <div class="card-provider">Bytedance Seed</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.40</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$2.00</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>262K</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">bytedance-seed/seed-2.0-code</div>
+      <h3 class="card-name">ByteDance Seed: Seed-2.0-Code</h3>
+      <div class="card-provider">Bytedance Seed</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.40</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$2.40</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>262K</b> · text+image+video->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article>
+    <article class="card ">
+      <div class="card-id">sakana/sakana-namazu</div>
+      <h3 class="card-name">Sakana: Sakana Namazu</h3>
+      <div class="card-provider">Sakana</div>
+      <div class="card-prices">
+        <div class="pr"><span class="lbl">in / 1M</span><span class="val">$0.76</span></div>
+        <div class="pr"><span class="lbl">out / 1M</span><span class="val">$3.20</span></div>
+      </div>
+      <div class="card-ctx">ctx: <b>262K</b> · text+image+file->text</div>
+      <div class="card-badges"><span class="b">vision</span><span class="b b-discount">−20%</span></div>
+    </article></div>
+
+</body>
+</html>

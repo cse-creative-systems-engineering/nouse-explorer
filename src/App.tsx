@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { $autoRefresh, $refreshInterval, $research, $models } from './lib/store';
 import { ModelExplorer } from './components/ModelExplorer';
-import { ParticleField } from './components/ParticleField';
 import { ResearchBanner } from './components/ResearchBanner';
 import { Onboarding } from './components/Onboarding';
+import { BackgroundArt } from './components/BackgroundArt';
 import { useModels } from './hooks/useModels';
 import { nouse } from './lib/nouse';
 
@@ -47,13 +47,15 @@ export function App() {
 
   return (
     <>
-      <ParticleField />
-      <div className="aurora au1" aria-hidden="true" />
-      <div className="aurora au2" aria-hidden="true" />
-      <div className="aurora au3" aria-hidden="true" />
-      <ModelExplorer />
-      <ResearchBanner />
-      <Onboarding />
+      <BackgroundArt
+        src="./art/bg-sandbox.webp"
+        credit="Hermes · Isolated Sandboxing"
+      />
+      <div className="stage">
+        <ModelExplorer />
+        <ResearchBanner />
+        <Onboarding />
+      </div>
     </>
   );
 }

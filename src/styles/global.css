@@ -387,3 +387,56 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 
 /* researched-metric chips on cards */
 .meta-row.researched{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* ---------- Full-bleed art (room-lighting treatment) ---------- */
+.art-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+  overflow: hidden;
+  pointer-events: none;
+}
+.art-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  opacity: 0.35;
+  filter: blur(2px) saturate(0.7) contrast(0.95);
+}
+.art-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.75) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.15) 18%, rgba(0,0,0,0.15) 82%, rgba(0,0,0,0.6) 100%);
+}
+.art-bg-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.6;
+  mix-blend-mode: overlay;
+}
+.art-bg-credit {
+  position: absolute;
+  bottom: 12px;
+  right: 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(194, 198, 247, 0.45);
+}
+.art-bg-credit b { color: #c2c6f7; font-weight: 500; }
+
+/* The scroll surface that holds every interactive element must sit
+   above the art-bg (z-index 0) and below modals (z-index 100+). */
+.stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 0 48px 200px;
+  color: #f6f1e6;
+}
