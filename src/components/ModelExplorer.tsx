@@ -182,10 +182,15 @@ export function ModelExplorer() {
       : usecase === 'research' ? { id: 'intelligence', label: 'Intelligence', dir: 'desc', metric: null }
       : (rankAxes.find((r) => r.id === rank) ?? EMBEDDED_RANKS[0]);
 
-    list = list
+    list = [...list]
       .map((m) => ({ m, v: axisValue(m, activeAxis, extra[m.id]) }))
-      .filter((x) => x.v !== null)
-      .sort((a, b) => (activeAxis.dir === 'desc' ? b.v! - a.v! : a.v! - b.v!))
+      .sort((a, b) => {
+        // models with no data on the active axis go LAST — never dropped
+        if (a.v === null && b.v === null) return 0;
+        if (a.v === null) return 1;
+        if (b.v === null) return -1;
+        return activeAxis.dir === 'desc' ? b.v! - a.v! : a.v! - b.v!;
+      })
       .map((x) => x.m);
 
     return list;
