@@ -13,28 +13,31 @@ import {
 } from '../lib/pricing';
 import { DiscountBadge } from './DiscountBadge';
 
-type SortKey = 'name' | 'provider' | 'prompt' | 'completion' | 'discount' | 'context' | 'coding' | 'intelligence' | 'agentic';
+type SortKey = 'name' | 'provider' | 'prompt' | 'completion' | 'discount' | 'context' | 'coding' | 'intelligence' | 'agentic' | 'speed' | 'scicode' | 'popular';
 
 interface ColumnDef {
   key: SortKey | null;
-  label: string;
+  label: string; // spelled out
+  tip: string;   // tooltip
   align?: 'left' | 'right';
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: 'name', label: 'Model' },
-  { key: 'provider', label: 'Provider' },
-  { key: 'prompt', label: 'In / 1M', align: 'right' },
-  { key: 'completion', label: 'Out / 1M', align: 'right' },
-  { key: 'discount', label: 'Disc', align: 'right' },
-  { key: 'context', label: 'Ctx', align: 'right' },
-  { key: 'coding', label: 'CI', align: 'right' },
-  { key: 'intelligence', label: 'II', align: 'right' },
-  { key: 'agentic', label: 'AI', align: 'right' },
-  { key: null, label: '' },
+  { key: 'name', label: 'Model', tip: 'Sort by model name (A–Z)' },
+  { key: 'provider', label: 'Provider', tip: 'Sort by provider (A–Z)' },
+  { key: 'prompt', label: 'Input $ / 1M', tip: 'Input price per 1M tokens — sort ascending for cheapest', align: 'right' },
+  { key: 'completion', label: 'Output $ / 1M', tip: 'Output price per 1M tokens — sort ascending for cheapest', align: 'right' },
+  { key: 'discount', label: 'Discount', tip: 'Discount % vs list price — sort for biggest savings', align: 'right' },
+  { key: 'context', label: 'Context', tip: 'Max context window in tokens', align: 'right' },
+  { key: 'coding', label: 'Coding', tip: 'Artificial Analysis coding index (embedded)', align: 'right' },
+  { key: 'intelligence', label: 'Intelligence', tip: 'Artificial Analysis intelligence index (embedded)', align: 'right' },
+  { key: 'agentic', label: 'Agentic', tip: 'Artificial Analysis agentic index (embedded)', align: 'right' },
+  { key: 'speed', label: 'Speed t/s', tip: 'Output speed, tokens/sec (researched via Artificial Analysis)', align: 'right' },
+  { key: 'scicode', label: 'SciCode', tip: 'SciCode benchmark score (researched via Artificial Analysis)', align: 'right' },
+  { key: null, label: '', tip: '' },
 ];
 
-function valueFor(m: ModelEntry, key: SortKey): number | string | null {
+function valueFor(m: ModelEntry, key: SortKey, extra?: Record<string, number>): number | string | null {
   const r = resolvePricing(m.pricing);
   switch (key) {
     case 'name': return (m.name ?? m.id).toLowerCase();
@@ -51,23 +54,26 @@ function valueFor(m: ModelEntry, key: SortKey): number | string | null {
     case 'coding': return m.benchmarks?.artificial_analysis?.coding_index ?? -1;
     case 'intelligence': return m.benchmarks?.artificial_analysis?.intelligence_index ?? -1;
     case 'agentic': return m.benchmarks?.artificial_analysis?.agentic_index ?? -1;
+    case 'speed': return extra?.median_output_tokens_per_second ?? -1;
+    case 'scicode': return extra?.scicode ?? -1;
+    case 'popular': return extra?.hf_downloads ?? -1;
   }
 }
 
 interface ModelTableProps {
   models: ModelEntry[];
+  extra?: Record<string, Record<string, number>>;
 }
 
-export function ModelTable({ models }: ModelTableProps) {
+export function ModelTable({ models, extra }: ModelTableProps) {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const sorted = useMemo(() => {
     if (!sortKey) return models;
     return [...models].sort((a, b) => {
-      const va = valueFor(a, sortKey);
-      const vb = valueFor(b, sortKey);
-      // nulls last
+      const va = valueFor(a, sortKey, extra?.[a.id]);
+      const vb = valueFor(b, sortKey, extra?.[b.id]);
       if (va === null && vb === null) return 0;
       if (va === null) return 1;
       if (vb === null) return -1;
@@ -76,7 +82,7 @@ export function ModelTable({ models }: ModelTableProps) {
       else cmp = (va as number) - (vb as number);
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [models, sortKey, sortDir]);
+  }, [models, sortKey, sortDir, extra]);
 
   function setSort(key: SortKey) {
     if (sortKey === key) {
@@ -105,6 +111,7 @@ export function ModelTable({ models }: ModelTableProps) {
                     key={c.key}
                     className="sortable"
                     onClick={() => setSort(c.key!)}
+                    title={`${c.tip} — click to sort (${active ? `currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : 'click to sort'})`}
                     style={{ textAlign: c.align ?? 'left' }}
                     aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
@@ -121,32 +128,43 @@ export function ModelTable({ models }: ModelTableProps) {
               const prompt = perMillion(r.prompt);
               const completion = perMillion(r.completion);
               const bench = m.benchmarks?.artificial_analysis;
+              const mExtra = extra?.[m.id];
               return (
-                <tr key={m.id} onClick={() => open(m.id)}>
+                <tr key={m.id} onClick={() => open(m.id)} title={`${m.name} — click for details`}>
                   <td className="cell-name">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
                       <DiscountBadge pricing={m.pricing} />
-                      {isFreeVariant(m.id) && <span className="badge success">free</span>}
-                      {isBatch(m.id) && <span className="badge info">batch</span>}
+                      {isFreeVariant(m.id) && <span className="badge success" title="Free model">free</span>}
+                      {isBatch(m.id) && <span className="badge info" title="Batch/offline variant">batch</span>}
                     </div>
                     <div className="cell-id" style={{ marginTop: 2 }}>{m.id}</div>
                   </td>
-                  <td className="cell-provider">{providerFromId(m.id)}</td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>{formatUsd(prompt)}</td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>{formatUsd(completion)}</td>
+                  <td className="cell-provider" title={providerFromId(m.id)}>{providerFromId(m.id)}</td>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title={`Input $${formatUsd(prompt)} / 1M tokens`}>{formatUsd(prompt)}</td>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title={`Output $${formatUsd(completion)} / 1M tokens`}>{formatUsd(completion)}</td>
                   <td className="cell-num" style={{ textAlign: 'right' }}>
-                    {m.pricing.original ? <DiscountBadge pricing={m.pricing} /> : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                    {m.pricing.original ? <DiscountBadge pricing={m.pricing} /> : <span style={{ color: 'var(--text-muted)' }} title="No discount">—</span>}
                   </td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>{formatContext(m.context_length)}</td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title={`Context window: ${m.context_length?.toLocaleString() ?? 'n/a'} tokens`}>{formatContext(m.context_length)}</td>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis coding index (embedded)">
                     {fmtScore(bench?.coding_index)}
                   </td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis intelligence index (embedded)">
                     {fmtScore(bench?.intelligence_index)}
                   </td>
-                  <td className="cell-num" style={{ textAlign: 'right' }}>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis agentic index (embedded)">
                     {fmtScore(bench?.agentic_index)}
+                  </td>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Output speed, tokens/sec (researched via Artificial Analysis)">
+                    {mExtra?.median_output_tokens_per_second != null
+                      ? Math.round(mExtra.median_output_tokens_per_second!)
+                      : <span className="na">—</span>}
+                  </td>
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="SciCode benchmark score (researched via Artificial Analysis)">
+                    {mExtra?.scicode != null
+                      ? (mExtra.scicode!).toFixed(2)
+                      : <span className="na">—</span>}
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <button
@@ -157,7 +175,7 @@ export function ModelTable({ models }: ModelTableProps) {
                         open(m.id);
                       }}
                       aria-label={`Open ${m.name} details`}
-                      title="Details"
+                      title="Open details"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="9 18 15 12 9 6" />

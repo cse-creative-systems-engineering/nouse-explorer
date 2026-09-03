@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 export interface DropdownOption<T extends string = string> {
   value: T;
   label: string;
+  /** disabled + shown with a pending '…' (waiting for research data) */
+  pending?: boolean;
 }
 
 interface DropdownProps<T extends string> {
@@ -12,6 +14,7 @@ interface DropdownProps<T extends string> {
   options: DropdownOption<T>[];
   label?: ReactNode;
   placeholder?: string;
+  width?: number;
 }
 
 export function Dropdown<T extends string>({
@@ -20,6 +23,7 @@ export function Dropdown<T extends string>({
   options,
   label,
   placeholder = 'Any',
+  width,
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -43,7 +47,7 @@ export function Dropdown<T extends string>({
   }, [open]);
 
   return (
-    <div className={`dropdown ${open ? 'open' : ''}`} ref={ref}>
+    <div className={`dropdown glass-dd ${open ? 'open' : ''}`} ref={ref} style={width ? { width } : undefined}>
       <button
         type="button"
         className="dropdown-trigger"
@@ -52,7 +56,7 @@ export function Dropdown<T extends string>({
         aria-expanded={open}
       >
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {label && <span style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>}
+          {label && <span className="dd-label">{label}</span>}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {current ? current.label : placeholder}
           </span>
@@ -63,29 +67,22 @@ export function Dropdown<T extends string>({
       </button>
       {open && (
         <div className="dropdown-menu" role="listbox">
-          <button
-            type="button"
-            className={`dropdown-item ${value === ('' as T) ? 'active' : ''}`}
-            onClick={() => {
-              onChange('' as T);
-              setOpen(false);
-            }}
-          >
-            <span>{placeholder}</span>
-          </button>
           {options.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`dropdown-item ${opt.value === value ? 'active' : ''}`}
+              className={`dropdown-item ${opt.value === value ? 'active' : ''}${opt.pending ? ' pending' : ''}`}
               role="option"
               aria-selected={opt.value === value}
+              disabled={opt.pending}
+              title={opt.pending ? 'Waiting for research data — unlocks when the background research completes' : undefined}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);
               }}
             >
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.label}</span>
+              {opt.pending && <span className="chip-wait" aria-hidden="true">…</span>}
             </button>
           ))}
         </div>

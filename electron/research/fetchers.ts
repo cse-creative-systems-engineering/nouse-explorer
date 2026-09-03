@@ -146,8 +146,8 @@ export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric
   const out: Metric[] = [];
   const src = 'https://artificialanalysis.ai/leaderboards/models';
   const evals = (rec.evaluations ?? {}) as Record<string, unknown>;
-  const perf = (rec.performance ?? {}) as Record<string, unknown>;
   const pric = (rec.pricing ?? {}) as Record<string, unknown>;
+  // NOTE: live API returns speed/latency at TOP level (not under performance)
   const map: Record<string, unknown> = {
     artificial_analysis_intelligence_index: evals.artificial_analysis_intelligence_index,
     artificial_analysis_coding_index: evals.artificial_analysis_coding_index,
@@ -158,8 +158,8 @@ export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric
     livecodebench: evals.livecodebench,
     scicode: evals.scicode,
     aime: evals.aime,
-    median_output_tokens_per_second: perf.median_output_tokens_per_second,
-    median_time_to_first_token_seconds: perf.median_time_to_first_token_seconds,
+    median_output_tokens_per_second: rec.median_output_tokens_per_second,
+    median_time_to_first_token_seconds: rec.median_time_to_first_token_seconds,
     price_1m_input: pric.price_1m_input_tokens,
     price_1m_output: pric.price_1m_output_tokens,
   };

@@ -384,3 +384,6 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .history-type.removed_model{color:var(--text3);background:var(--glass2)}
 .history-msg{flex:1;color:var(--text2)}
 .history-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono';white-space:nowrap}
+
+/* researched-metric chips on cards */
+.meta-row.researched{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}

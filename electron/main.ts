@@ -196,6 +196,14 @@ ipcMain.handle('research:profile', (_e, modelId: string) => {
   }
 });
 
+ipcMain.handle('research:profiled', () => {
+  const db = getDb();
+  const rows = db
+    .prepare(`SELECT id FROM model_profiles WHERE profile_json IS NOT NULL AND profile_json != ''`)
+    .all() as Array<{ id: string }>;
+  return rows.map((r) => r.id);
+});
+
 // --- alerts IPC ---
 ipcMain.handle('alerts:list', () => listWatches());
 ipcMain.handle('alerts:create', (_e, w: Omit<Watch, 'id'>) => createWatch(w));
