@@ -10,7 +10,14 @@ export const $fetchedAt = atom<number | null>(null);
 export const $filters = atom<FilterState>({ ...defaultFilters });
 export const $sortKey = atom<SortKey>('name');
 export const $sortDir = atom<SortDir>('asc');
-export const $view = atom<ViewMode>('cards');
+export const $view = atom<ViewMode>(
+  (localStorage.getItem('nouse.view') === 'table' ? 'table' : 'cards')
+);
+
+// Persist view mode across restarts.
+$view.subscribe((v) => {
+  try { localStorage.setItem('nouse.view', v); } catch { /* non-fatal */ }
+});
 export const $selectedId = atom<string | null>(null);
 
 export const $autoRefresh = atom<boolean>(true);

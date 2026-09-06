@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
 import {
@@ -99,6 +99,7 @@ export function ModelTable({ models, extra }: ModelTableProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [widths, setWidths] = useState<Partial<Record<SortKey, number>>>(() => loadWidths());
   const [drag, setDrag] = useState<{ key: SortKey; startX: number; startW: number } | null>(null);
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
 
   // Live column resize while a header drag handle is active.
   useEffect(() => {
@@ -156,6 +157,26 @@ export function ModelTable({ models, extra }: ModelTableProps) {
     $selectedId.set(id);
   }
 
+  // Keyboard nav: ↑/↓ move row focus, Enter/Space open, Home/End jump.
+  const onBodyKeyDown = (e: React.KeyboardEvent) => {
+    const rows = Array.from(bodyRef.current?.querySelectorAll<HTMLTableRowElement>('tr[tabindex]') ?? []);
+    if (rows.length === 0) return;
+    const cur = rows.indexOf(document.activeElement as HTMLTableRowElement);
+    let next = -1;
+    if (e.key === 'ArrowDown') next = Math.min(rows.length - 1, cur + 1);
+    else if (e.key === 'ArrowUp') next = Math.max(0, cur - 1);
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = rows.length - 1;
+    else if ((e.key === 'Enter' || e.key === ' ') && cur >= 0) {
+      e.preventDefault();
+      open(rows[cur].dataset.id!);
+      return;
+    } else return;
+    e.preventDefault();
+    rows[next]?.focus();
+    rows[next]?.scrollIntoView({ block: 'nearest' });
+  };
+
   return (
     <div className="table-wrap glass">
       <div className="table-scroll">
@@ -208,7 +229,7 @@ export function ModelTable({ models, extra }: ModelTableProps) {
               })}
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={bodyRef} onKeyDown={onBodyKeyDown}>
             {sorted.map((m) => {
               const r = resolvePricing(m.pricing);
               const prompt = perMillion(r.prompt);
@@ -216,7 +237,7 @@ export function ModelTable({ models, extra }: ModelTableProps) {
               const bench = m.benchmarks?.artificial_analysis;
               const mExtra = extra?.[m.id];
               return (
-                <tr key={m.id} onClick={() => open(m.id)} title={`${m.name} — click for details`}>
+                <tr key={m.id} data-id={m.id} tabIndex={0} onClick={() => open(m.id)} title={`${m.name} — click for details`}>
                   <td className="cell-name">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>

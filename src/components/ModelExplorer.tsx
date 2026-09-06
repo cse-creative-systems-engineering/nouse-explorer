@@ -54,17 +54,22 @@ export function ModelExplorer() {
   const prevDone = useRef(0);
   const prevRunning = useRef(false);
 
-  // ⌘K / Ctrl+K focuses search
+  // ⌘K / Ctrl+K focuses search; Esc clears search then blurs
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         searchRef.current?.focus();
+        searchRef.current?.select();
+      } else if (e.key === 'Escape' && document.activeElement === searchRef.current) {
+        e.preventDefault();
+        if (query) setQuery('');
+        else searchRef.current?.blur();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [query]);
 
   const loadResearch = () => {
     const b = nouse();
@@ -88,6 +93,16 @@ export function ModelExplorer() {
     }
     prevRunning.current = research.running;
   }, [research.done, research.running]);
+
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const hintFadeTimer = useRef<number | undefined>(undefined);
+  const onResultsScroll = () => {
+    const hint = document.querySelector('.scroll-hint');
+    if (!hint) return;
+    hint.classList.add('scrolling');
+    window.clearTimeout(hintFadeTimer.current);
+    hintFadeTimer.current = window.setTimeout(() => hint.classList.remove('scrolling'), 900);
+  };
 
   // metric coverage drives which sort/variant items are enabled
   const metricCoverage: Record<string, number> = useMemo(() => {
@@ -200,6 +215,7 @@ export function ModelExplorer() {
           onChange={(v) => $autoRefresh.set(v)}
           label="AUTO-REFRESH"
         />
+        <div className="deck-divider" aria-hidden="true" />
         <button
           type="button"
           className="magic-btn bell-btn"
@@ -228,15 +244,20 @@ export function ModelExplorer() {
         </div>
       </div>
 
-      <div className="results">
+      <div className="results" ref={resultsRef} onScroll={onResultsScroll}>
         {loading && models.length === 0 && (
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text3)' }}>
-            Loading the catalog…
+          <div className="empty-state" role="status" aria-live="polite">
+            <div className="spinner" aria-hidden="true" />
+            <p>Loading the catalog…</p>
           </div>
         )}
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
-            <p>No models match{query ? ` “${query}”` : ''} the current filters.</p>
+            <div className="empty-glyph" aria-hidden="true">⌕</div>
+            <p>
+              <b>No models match{query ? ` “${query}”` : ''}</b> the current filters.
+            </p>
+            <p className="empty-hint">Try a shorter search, a different variant, or clear everything below.</p>
             <button
               type="button"
               className="btn"
@@ -270,9 +291,6 @@ export function ModelExplorer() {
           <div style={{ padding: '10px 28px', color: 'var(--warn)', fontSize: 12 }}>
             Live fetch failed — showing cached data: {error}
           </div>
-        )}
-        {filtered.length > 8 && (
-          <div className="results-fade" aria-hidden="true" />
         )}
       </div>
       {filtered.length > 8 && (
