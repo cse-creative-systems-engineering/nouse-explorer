@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
 import {
@@ -65,9 +65,68 @@ interface ModelTableProps {
   extra?: Record<string, Record<string, number>>;
 }
 
+const STORAGE_KEY = 'nouse.table.colWidths.v1';
+const MIN_COL_W = 56;
+
+/** Sensible defaults so `table-layout: fixed` is fully determined on first load. */
+const DEFAULT_WIDTHS: Record<SortKey, number> = {
+  name: 260,
+  provider: 110,
+  prompt: 96,
+  completion: 104,
+  discount: 92,
+  context: 92,
+  coding: 82,
+  intelligence: 108,
+  agentic: 84,
+  speed: 96,
+  scicode: 88,
+  popular: 100,
+};
+
+/** Load persisted column-width overrides (per column key, in px). */
+function loadWidths(): Partial<Record<SortKey, number>> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<Record<SortKey, number>>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function ModelTable({ models, extra }: ModelTableProps) {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [widths, setWidths] = useState<Partial<Record<SortKey, number>>>(() => loadWidths());
+  const [drag, setDrag] = useState<{ key: SortKey; startX: number; startW: number } | null>(null);
+
+  // Live column resize while a header drag handle is active.
+  useEffect(() => {
+    if (!drag) return;
+    function onMove(e: MouseEvent) {
+      if (!drag) return;
+      e.preventDefault(); // keep text selection off while dragging
+      const next = Math.max(MIN_COL_W, drag.startW + e.clientX - drag.startX);
+      setWidths((w) => ({ ...w, [drag.key]: next }));
+    }
+    function onUp() {
+      setDrag(null);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [drag]);
+
+  // Persist widths once a drag finishes.
+  useEffect(() => {
+    if (drag) return; // save on drag end, not every move
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(widths));
+    } catch { /* storage unavailable — non-fatal */ }
+  }, [widths, drag]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return models;
@@ -103,20 +162,47 @@ export function ModelTable({ models, extra }: ModelTableProps) {
         <table className="table">
           <thead>
             <tr>
-              {COLUMNS.map((c) => {
-                if (!c.key) return <th key={c.label} style={{ width: 90 }} />;
-                const active = sortKey === c.key;
+              {COLUMNS.map((c, ci) => {
+                const colKey = c.key;
+                if (!colKey) return <th key={c.label} style={{ width: 90 }} />;
+                const active = sortKey === colKey;
                 return (
                   <th
-                    key={c.key}
+                    key={colKey}
                     className="sortable"
-                    onClick={() => setSort(c.key!)}
-                    title={`${c.tip} — click to sort (${active ? `currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : 'click to sort'})`}
-                    style={{ textAlign: c.align ?? 'left' }}
+                    onClick={() => setSort(colKey)}
+                    onDoubleClick={(e) => {
+                      // double-click on the label (not the handle) resets this column
+                      if ((e.target as HTMLElement).closest('.col-resizer')) return;
+                      setWidths((w) => {
+                        const { [colKey]: _drop, ...rest } = w;
+                        return rest;
+                      });
+                    }}
+                    title={`${c.tip} — click to sort, drag edge to resize, double-click to reset (${active ? `currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : 'click to sort'})`}
+                    style={{ textAlign: c.align ?? 'left', width: widths[colKey] ?? DEFAULT_WIDTHS[colKey] }}
                     aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     {c.label}
                     <span className={`chev ${active ? (sortDir === 'asc' ? 'up' : 'down') : ''}`}>▾</span>
+                    {ci < COLUMNS.length - 1 && (
+                      <span
+                        className={`col-resizer${drag?.key === colKey ? ' active' : ''}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDrag({ key: colKey, startX: e.clientX, startW: widths[colKey] ?? DEFAULT_WIDTHS[colKey] });
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setWidths((w) => {
+                            const { [colKey]: _drop, ...rest } = w;
+                            return rest;
+                          });
+                        }}
+                        title="Drag to resize — double-click to reset"
+                      />
+                    )}
                   </th>
                 );
               })}
