@@ -95,11 +95,10 @@ ipcMain.handle('research:status', () => {
 
 ipcMain.handle('research:metrics', () => {
   const db = getDb();
+  // Expose every researched metric — the UI derives columns/axes from what
+  // actually has data, so filtering here hides research from the whole app.
   const rows = db
-    .prepare(
-      `SELECT model_id, metric, value FROM metric_observations
-       WHERE metric IN ('median_output_tokens_per_second','median_time_to_first_token_seconds','hf_downloads','hf_likes','scicode','livecodebench','mmlu_pro')`,
-    )
+    .prepare(`SELECT model_id, metric, value FROM metric_observations`)
     .all() as Array<{ model_id: string; metric: string; value: number }>;
   const byModel: Record<string, Record<string, number>> = {};
   for (const r of rows) {
@@ -127,11 +126,17 @@ ipcMain.handle('research:axes', () => {
 
   const AXIS_DEFS: Array<{ metric: string; id: string; label: string; dir: 'desc' | 'asc' }> = [
     { metric: 'hf_downloads', id: 'popular', label: 'Popular', dir: 'desc' },
+    { metric: 'hf_likes', id: 'liked', label: 'Most liked', dir: 'desc' },
     { metric: 'median_output_tokens_per_second', id: 'speed', label: 'Speed', dir: 'desc' },
     { metric: 'median_time_to_first_token_seconds', id: 'latency', label: 'Low latency', dir: 'asc' },
+    { metric: 'artificial_analysis_coding_index', id: 'aa_coding', label: 'AA Coding', dir: 'desc' },
+    { metric: 'artificial_analysis_intelligence_index', id: 'aa_intelligence', label: 'AA Intelligence', dir: 'desc' },
+    { metric: 'artificial_analysis_math_index', id: 'aa_math', label: 'AA Math', dir: 'desc' },
     { metric: 'scicode', id: 'scicode', label: 'SciCode', dir: 'desc' },
     { metric: 'livecodebench', id: 'livecodebench', label: 'LiveCodeBench', dir: 'desc' },
     { metric: 'mmlu_pro', id: 'mmlu', label: 'MMLU-Pro', dir: 'desc' },
+    { metric: 'gpqa', id: 'gpqa', label: 'GPQA', dir: 'desc' },
+    { metric: 'aime', id: 'aime', label: 'AIME', dir: 'desc' },
   ];
 
   return AXIS_DEFS.map((a) => {

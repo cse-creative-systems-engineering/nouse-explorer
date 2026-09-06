@@ -48,6 +48,10 @@ export function buildSortOptions(metricCoverage: Record<string, number>): SortOp
     { id: 'scicode_desc', label: 'SciCode: High to Low', pending: !covered('scicode') },
     { id: 'livecode_desc', label: 'LiveCodeBench: High to Low', pending: !covered('livecodebench') },
     { id: 'mmlu_desc', label: 'MMLU-Pro: High to Low', pending: !covered('mmlu_pro') },
+    { id: 'gpqa_desc', label: 'GPQA: High to Low', pending: !covered('gpqa') },
+    { id: 'aime_desc', label: 'AIME: High to Low', pending: !covered('aime') },
+    { id: 'math_desc', label: 'AA Math: High to Low', pending: !covered('artificial_analysis_math_index') },
+    { id: 'likes_desc', label: 'Most Liked (HF)', pending: !covered('hf_likes') },
   ];
 }
 
@@ -98,13 +102,18 @@ export function sortValue(m: ModelEntry, sortId: string, extra: Record<string, n
     case 'context_desc': case 'context_asc': return m.context_length ?? null;
     case 'throughput_desc': case 'throughput_asc': return extra?.median_output_tokens_per_second ?? null;
     case 'latency_asc': case 'latency_desc': return extra?.median_time_to_first_token_seconds ?? null;
-    case 'intel_desc': case 'intel_asc': return aa?.intelligence_index ?? null;
-    case 'coding_desc': case 'coding_asc': return aa?.coding_index ?? null;
-    case 'agentic_desc': case 'agentic_asc': return aa?.agentic_index ?? null;
+    // AA indices: prefer embedded catalog value, fall back to researched data
+    case 'intel_desc': case 'intel_asc': return aa?.intelligence_index ?? extra?.artificial_analysis_intelligence_index ?? null;
+    case 'coding_desc': case 'coding_asc': return aa?.coding_index ?? extra?.artificial_analysis_coding_index ?? null;
+    case 'agentic_desc': case 'agentic_asc': return aa?.agentic_index ?? extra?.['artificial_analysis_agentic_index'] ?? null;
     case 'elo_desc': case 'elo_asc': return elo;
     case 'scicode_desc': return extra?.scicode ?? null;
     case 'livecode_desc': return extra?.livecodebench ?? null;
     case 'mmlu_desc': return extra?.mmlu_pro ?? null;
+    case 'gpqa_desc': return extra?.gpqa ?? null;
+    case 'aime_desc': return extra?.aime ?? null;
+    case 'math_desc': return extra?.artificial_analysis_math_index ?? null;
+    case 'likes_desc': return extra?.hf_likes ?? null;
     default: return null;
   }
 }

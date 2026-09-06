@@ -39,6 +39,7 @@ const COLUMNS: ColumnDef[] = [
 
 function valueFor(m: ModelEntry, key: SortKey, extra?: Record<string, number>): number | string | null {
   const r = resolvePricing(m.pricing);
+  const bench = m.benchmarks?.artificial_analysis;
   switch (key) {
     case 'name': return (m.name ?? m.id).toLowerCase();
     case 'provider': return providerFromId(m.id);
@@ -51,9 +52,10 @@ function valueFor(m: ModelEntry, key: SortKey, extra?: Record<string, number>): 
       return -1; // no discount sorts last
     }
     case 'context': return m.context_length ?? 0;
-    case 'coding': return m.benchmarks?.artificial_analysis?.coding_index ?? -1;
-    case 'intelligence': return m.benchmarks?.artificial_analysis?.intelligence_index ?? -1;
-    case 'agentic': return m.benchmarks?.artificial_analysis?.agentic_index ?? -1;
+    // AA indices: prefer the embedded catalog value, fall back to researched data
+    case 'coding': return bench?.coding_index ?? extra?.artificial_analysis_coding_index ?? -1;
+    case 'intelligence': return bench?.intelligence_index ?? extra?.artificial_analysis_intelligence_index ?? -1;
+    case 'agentic': return bench?.agentic_index ?? extra?.['artificial_analysis_agentic_index'] ?? -1;
     case 'speed': return extra?.median_output_tokens_per_second ?? -1;
     case 'scicode': return extra?.scicode ?? -1;
     case 'popular': return extra?.hf_downloads ?? -1;
@@ -254,14 +256,14 @@ export function ModelTable({ models, extra }: ModelTableProps) {
                     {m.pricing.original ? <DiscountBadge pricing={m.pricing} /> : <span style={{ color: 'var(--text-muted)' }} title="No discount">—</span>}
                   </td>
                   <td className="cell-num" style={{ textAlign: 'right' }} title={`Context window: ${m.context_length?.toLocaleString() ?? 'n/a'} tokens`}>{formatContext(m.context_length)}</td>
-                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis coding index (embedded)">
-                    {fmtScore(bench?.coding_index)}
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis coding index (catalog or researched)">
+                    {fmtScore(bench?.coding_index ?? mExtra?.artificial_analysis_coding_index)}
                   </td>
-                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis intelligence index (embedded)">
-                    {fmtScore(bench?.intelligence_index)}
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis intelligence index (catalog or researched)">
+                    {fmtScore(bench?.intelligence_index ?? mExtra?.artificial_analysis_intelligence_index)}
                   </td>
-                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis agentic index (embedded)">
-                    {fmtScore(bench?.agentic_index)}
+                  <td className="cell-num" style={{ textAlign: 'right' }} title="Artificial Analysis agentic index (catalog or researched)">
+                    {fmtScore(bench?.agentic_index ?? mExtra?.['artificial_analysis_agentic_index'])}
                   </td>
                   <td className="cell-num" style={{ textAlign: 'right' }} title="Output speed, tokens/sec (researched via Artificial Analysis)">
                     {mExtra?.median_output_tokens_per_second != null

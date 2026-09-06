@@ -27,11 +27,21 @@ function isFree(m: ModelEntry): boolean {
   return (isFinite(p) && p === 0) && (isFinite(c) && c === 0);
 }
 
-function hasBench(m: ModelEntry): boolean {
+function hasBench(m: ModelEntry, extra?: Record<string, number>): boolean {
   const b = m.benchmarks;
-  if (!b) return false;
-  if (Array.isArray(b.design_arena) && b.design_arena.length > 0) return true;
-  return !!b.artificial_analysis;
+  if (b) {
+    if (Array.isArray(b.design_arena) && b.design_arena.length > 0) return true;
+    if (b.artificial_analysis) return true;
+  }
+  // researched-only benchmarks count too (AA indices land in the research DB)
+  return (
+    extra?.artificial_analysis_coding_index != null ||
+    extra?.artificial_analysis_intelligence_index != null ||
+    extra?.scicode != null ||
+    extra?.mmlu_pro != null ||
+    extra?.gpqa != null ||
+    extra?.livecodebench != null
+  );
 }
 
 export function ModelExplorer() {
@@ -163,10 +173,10 @@ export function ModelExplorer() {
       const p = parseFloat(m.pricing.prompt);
       const orig = m.pricing.original ? parseFloat(m.pricing.original.prompt) : 0;
       if (isFinite(p) && isFinite(orig) && orig > 0 && p < orig) discounted += 1;
-      if (hasBench(m)) benchmarked += 1;
+      if (hasBench(m, extra[m.id])) benchmarked += 1;
     }
     return { total: models.length, free, discounted, benchmarked };
-  }, [models]);
+  }, [models, extra]);
 
   const activeSortLabel = sortOptions.find((o) => o.id === sort)?.label ?? 'Sort…';
   const selected = models.find((m) => m.id === selectedId) ?? null;

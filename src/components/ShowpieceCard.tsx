@@ -37,16 +37,18 @@ export function ShowpieceCard({
   const aa = model.benchmarks?.artificial_analysis ?? null;
   const da = model.benchmarks?.design_arena ?? [];
   const elo = da.length > 0 ? da[0].elo : null;
-  const ci = aa?.coding_index ?? null;
-  const ii = aa?.intelligence_index ?? null;
-  const ai = aa?.agentic_index ?? null;
+  // AA indices: prefer embedded catalog value, fall back to researched data
+  const ci = aa?.coding_index ?? extra?.artificial_analysis_coding_index ?? null;
+  const ii = aa?.intelligence_index ?? extra?.artificial_analysis_intelligence_index ?? null;
+  const ai = aa?.agentic_index ?? extra?.['artificial_analysis_agentic_index'] ?? null;
   const vision = (model.architecture?.input_modalities ?? []).includes('image');
 
   const speed = extra?.median_output_tokens_per_second;
   const scicode = extra?.scicode;
   const hfDownloads = extra?.hf_downloads;
 
-  const hasData = ci != null || ii != null || ai != null || elo != null || speed != null || scicode != null;
+  const hasData = ci != null || ii != null || ai != null || elo != null || speed != null || scicode != null
+    || extra?.artificial_analysis_coding_index != null || extra?.artificial_analysis_intelligence_index != null;
 
   const prompt = perMillion(model.pricing.prompt);
   const completion = perMillion(model.pricing.completion);
