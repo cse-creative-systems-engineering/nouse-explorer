@@ -29,7 +29,10 @@ export interface ColumnDef {
 }
 const dash = '—';
 function num(digits = 1): (v: number | string | null) => string {
-  return (v) => (typeof v === 'number' && isFinite(v) ? v.toFixed(digits) : dash);
+  return (v) => {
+    if (v === 'N/A') return 'N/A';
+    return typeof v === 'number' && isFinite(v) ? v.toFixed(digits) : dash;
+  };
 }
 /** Price in $ per 1M tokens, human-formatted. */
 function price(v: number | string | null): string {
@@ -49,6 +52,20 @@ function ctxFmt(v: number | string | null): string {
   if (v >= 1e6) return `${(v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 1)}M`;
   return `${Math.round(v / 1000)}K`;
 }
+
+/** Models that cannot code by design (embedding / audio-only models).
+ *  Their benchmark columns render "N/A" — a documented absence, not missing data. */
+const NON_CODING_MARKERS = [
+  'voyageai/', 'text-embedding', 'gemini-embedding', 'qwen3-embedding', 'pplx-embed',
+  'bge-', '/bge-', 'e5-large', 'e5-base', 'multilingual-e5', 'minilm', 'mpnet',
+  'paraphrase-', 'gte-base', 'gte-large', 'multi-qa-', 'gte_',
+];
+const NON_CODING_EXACT = new Set(['openai/gpt-audio', 'openai/gpt-audio-mini']);
+export function isNonCodingModel(id: string): boolean {
+  const low = id.toLowerCase();
+  return NON_CODING_MARKERS.some((m) => low.includes(m)) || NON_CODING_EXACT.has(low);
+}
+
 export const COLUMNS: ColumnDef[] = [
   // ── Model ────────────────────────────────────────────
   {
@@ -154,7 +171,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Median output generation speed in tokens per second, measured by Artificial Analysis\u2019 independent benchmarking. Higher is a snappier experience; below ~20 t/s a streaming response starts to feel slow for interactive use. This is median across their standardized test prompts, not a provider-advertised number.',
     summary: 'How fast the model generates text, measured independently.',
-    value: (_m, extra) => extra?.median_output_tokens_per_second ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.median_output_tokens_per_second ?? null),
     format: (v) => (typeof v === 'number' ? String(Math.round(v)) : dash),
   },
   {
@@ -167,7 +184,7 @@ export const COLUMNS: ColumnDef[] = [
     defaultSortDir: 'asc',
     tip: 'Median Time To First Token, in seconds — how long until the first word of the response appears after you hit send. This is the \u201cperceived responsiveness\u201d number for chat: lower is better. A model can stream fast (high t/s) but still feel sluggish if TTFT is high.',
     summary: 'Seconds until the first word appears — perceived responsiveness.',
-    value: (_m, extra) => extra?.median_time_to_first_token_seconds ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.median_time_to_first_token_seconds ?? null),
     format: num(2),
   },
   {
@@ -180,7 +197,7 @@ export const COLUMNS: ColumnDef[] = [
     defaultSortDir: 'asc',
     tip: 'Median Time To First Answer Token (Artificial Analysis). Similar to TTFT but specifically the first token of the substantive answer — models that emit a long reasoning preamble before answering score worse here. Lower is better for \u201cstraight to the point\u201d interactions.',
     summary: 'Seconds until the first token of the actual answer (skips preamble).',
-    value: (_m, extra) => extra?.median_time_to_first_answer_token ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.median_time_to_first_answer_token ?? null),
     format: num(2),
   },
   // ── Benchmarks: catalog-embedded, fallback to researched ──
@@ -191,9 +208,9 @@ export const COLUMNS: ColumnDef[] = [
     defaultOn: true,
     defaultWidth: 82,
     align: 'right',
-    tip: 'Artificial Analysis Coding Index — a composite score of how well the model writes and reasons about code across standard coding evaluations. Higher is better; the scale roughly runs 0\u2013100 with frontier models in the 60\u201380 band. Values come from the catalog when embedded, otherwise from live AA research.',
+    tip: 'Artificial Analysis Coding Index — a composite score of how well the model writes and reasons about code across standard coding evaluations. Higher is better; the scale roughly runs 0\u2013100 with frontier models in the 60\u201380 band. Values come from the catalog when embedded, otherwise from live AA research. Embedding and audio models show N/A — the metric does not apply to them.',
     summary: 'Composite code-writing ability score (0–100).',
-    value: (m, extra) => m.benchmarks?.artificial_analysis?.coding_index ?? extra?.artificial_analysis_coding_index ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (m.benchmarks?.artificial_analysis?.coding_index ?? extra?.artificial_analysis_coding_index ?? null),
     format: num(1),
   },
   {
@@ -203,9 +220,9 @@ export const COLUMNS: ColumnDef[] = [
     defaultOn: true,
     defaultWidth: 108,
     align: 'right',
-    tip: 'Artificial Analysis Intelligence Index — their headline composite of reasoning ability across many evaluations (knowledge, math, coding, analysis). Higher is better; think of it as a single \u201chow smart is this model\u201d number. Frontier models cluster in the 50\u201370 range; the scale is normalized so cross-model comparison is direct.',
+    tip: 'Artificial Analysis Intelligence Index — their headline composite of reasoning ability across many evaluations (knowledge, math, coding, analysis). Higher is better; think of it as a single \u201chow smart is this model\u201d number. Frontier models cluster in the 50\u201370 range; the scale is normalized so cross-model comparison is direct. Embedding and audio models show N/A — the metric does not apply to them.',
     summary: 'Headline "how smart is this model" composite score.',
-    value: (m, extra) => m.benchmarks?.artificial_analysis?.intelligence_index ?? extra?.artificial_analysis_intelligence_index ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (m.benchmarks?.artificial_analysis?.intelligence_index ?? extra?.artificial_analysis_intelligence_index ?? null),
     format: num(1),
   },
   {
@@ -217,7 +234,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Artificial Analysis Agentic Index — how well the model handles multi-step tool-using agent tasks (calling functions, iterating on results, recovering from errors). Higher is better. Only models whose catalog entry embeds this index show a value: Artificial Analysis retired this metric from their live API, so no new data is being collected.',
     summary: 'Multi-step tool-using agent task ability (no longer updated by AA).',
-    value: (m, extra) => m.benchmarks?.artificial_analysis?.agentic_index ?? extra?.artificial_analysis_agentic_index ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (m.benchmarks?.artificial_analysis?.agentic_index ?? extra?.artificial_analysis_agentic_index ?? null),
     format: num(1),
   },
   // ── Research-only benchmarks ─────────────────────────
@@ -230,7 +247,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'GPQA (Graduate-Level Google-Proof Q&A) — extremely hard multiple-choice science questions written by PhD domain experts, designed so that even skilled non-experts with web access score ~34%. A top-tier test of deep scientific reasoning: frontier models score 60\u201385%, older models fall below 50%. Higher is better.',
     summary: 'PhD-level science reasoning exam — frontier models score 60–85%.',
-    value: (_m, extra) => extra?.gpqa ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.gpqa ?? null),
     format: num(1),
   },
   {
@@ -242,7 +259,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Humanity\u2019s Last Exam — a frontier benchmark of 2,500+ expert-written questions across mathematics, physics, and other hard sciences, deliberately harder than any prior benchmark (many models score in single digits). Designed to be the \u201clast exam\u201d before AI exceeds expert-level human performance. Higher is better; even small differences are meaningful here.',
     summary: 'The hardest expert-written exam; even top models score low.',
-    value: (_m, extra) => extra?.hle ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.hle ?? null),
     format: num(1),
   },
   {
@@ -254,7 +271,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'MMLU-Pro — the harder, reasoning-focused successor to the classic MMLU knowledge exam: 12,000+ ten-choice questions across 14 domains (law, medicine, engineering, humanities). Measures broad world knowledge plus reasoning. Higher is better; strong models score 70\u201385%. Note: knowledge-heavy, so it saturates less than older MMLU but rewards memorization more than GPQA.',
     summary: 'Broad knowledge + reasoning across 14 domains.',
-    value: (_m, extra) => extra?.mmlu_pro ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.mmlu_pro ?? null),
     format: num(1),
   },
   {
@@ -266,7 +283,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'LiveCodeBench — competitive-programming problems (from LeetCode/AtCoder/Codeforces) published continuously after the model\u2019s training cutoff, so scores can\u2019t be gamed by memorization. Measures genuine algorithmic problem-solving: read the problem, write correct code. Higher is better.',
     summary: 'Fresh competitive-programming problems — can’t be memorized.',
-    value: (_m, extra) => extra?.livecodebench ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.livecodebench ?? null),
     format: num(1),
   },
   {
@@ -278,7 +295,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'SciCode — research-grade scientific computing problems (physics simulation, numerical methods) drawn from real graduate-level science workflows, requiring multi-step code synthesis. One of the hardest coding benchmarks; even frontier models historically scored below 30%. Higher is better.',
     summary: 'Graduate-level scientific computing problems. Very hard.',
-    value: (_m, extra) => extra?.scicode ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.scicode ?? null),
     format: num(2),
   },
   {
@@ -290,7 +307,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'AIME (American Invitational Mathematics Examination) — olympiad-qualifier math problems requiring multi-step symbolic reasoning with exact integer answers. AA reports the AIME 2024 set here. Elite math benchmark: top models score 80\u201390%+, mid-tier models below 40%. Higher is better.',
     summary: 'Olympiad-qualifier math, 2024 set. Elite models score 80–90%+.',
-    value: (_m, extra) => extra?.aime ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.aime ?? null),
     format: num(1),
   },
   {
@@ -302,7 +319,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'AIME 2025 — the newer AIME problem set, released after most training cutoffs and therefore more contamination-resistant than AIME 2024. Same olympiad-qualifier format and scoring; a model scoring much lower here than on AIME 2024 is likely benefiting from training-data overlap on the older set. Higher is better.',
     summary: 'The 2025 AIME set — more contamination-resistant.',
-    value: (_m, extra) => extra?.aime_25 ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.aime_25 ?? null),
     format: num(1),
   },
   {
@@ -314,7 +331,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'MATH-500 — a 500-problem subset of the MATH dataset covering competition mathematics (algebra, geometry, number theory, counting & probability). Sits between MMLU-Pro and AIME in difficulty. Higher is better; strong models exceed 90%.',
     summary: 'Competition math (algebra, geometry, number theory).',
-    value: (_m, extra) => extra?.math_500 ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.math_500 ?? null),
     format: num(1),
   },
   {
@@ -326,7 +343,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'IFBench (Instruction-Following Benchmark) — measures how precisely a model obeys explicit constraints in the prompt: formats, lengths, forbidden words, structural requirements. High intelligence with poor instruction-following still produces unusable answers; this is the \u201cdoes what you asked\u201d score. Higher is better.',
     summary: 'How precisely the model follows explicit instructions.',
-    value: (_m, extra) => extra?.ifbench ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.ifbench ?? null),
     format: num(1),
   },
   {
@@ -338,7 +355,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: '\u03c4\u00b2-Bench (Tau-Bench 2) — agentic customer-service simulations: the model plays an agent with tools (refunds, bookings, account changes) against a simulated user, scored on completing the task while respecting policy. Measures tool-use discipline, not raw knowledge. Higher is better.',
     summary: 'Simulated customer-service agent tasks with tools.',
-    value: (_m, extra) => extra?.tau2 ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.tau2 ?? null),
     format: num(1),
   },
   {
@@ -350,7 +367,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Terminal-Bench (hard split) — real terminal/shell tasks: navigate an unfamiliar filesystem, install dependencies, debug, edit files, run builds. This is the closest benchmark to \u201ccan it actually operate a computer\u201d and the agentic coding workflows built on that. Higher is better.',
     summary: 'Real terminal/shell tasks — "can it operate a computer".',
-    value: (_m, extra) => extra?.terminalbench_hard ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.terminalbench_hard ?? null),
     format: num(1),
   },
   {
@@ -362,7 +379,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'LCR (Live Code Reasoning) — Artificial Analysis\u2019 evaluation of code-reasoning quality on fresh problems. Complements the composite Coding Index with a single-skill read; useful for spotting models whose composite score hides weak code reasoning. Higher is better.',
     summary: 'AA’s single-skill code-reasoning read.',
-    value: (_m, extra) => extra?.lcr ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.lcr ?? null),
     format: num(1),
   },
   // ── Hugging Face community signal ────────────────────
@@ -375,7 +392,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Total downloads of the model\u2019s weights on Hugging Face — a raw popularity/usage signal for open-weight models. High downloads mean a large community, more fine-tunes, and more battle-tested behavior. Not a quality measure: marketing and recency inflate it. Closed models (API-only) have no HF page and show a dash.',
     summary: 'Community usage of the open weights on Hugging Face.',
-    value: (_m, extra) => extra?.hf_downloads ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.hf_downloads ?? null),
     format: (v) => (typeof v === 'number' && isFinite(v) ? v.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 }) : dash),
   },
   {
@@ -387,7 +404,7 @@ export const COLUMNS: ColumnDef[] = [
     align: 'right',
     tip: 'Hugging Face \u201clikes\u201d on the model\u2019s repository — community endorsement, closer to GitHub stars than to downloads. A denser quality signal than raw downloads (people like things they rate highly, not merely use), but still popularity-biased toward recent, well-marketed releases. Closed models show a dash.',
     summary: 'Community endorsement on Hugging Face (like GitHub stars).',
-    value: (_m, extra) => extra?.hf_likes ?? null,
+    value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.hf_likes ?? null),
     format: (v) => (typeof v === 'number' && isFinite(v) ? v.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 }) : dash),
   },
 ];

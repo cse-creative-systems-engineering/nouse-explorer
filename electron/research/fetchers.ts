@@ -161,12 +161,38 @@ export function matchAaRecord(
     return portalOrgs.some((p) => p === org || org.includes(p) || p.includes(org));
   };
 
-  // 1) exact / containment slug match with creator agreement
+  // 1a) exact slug match with creator agreement
   for (const r of aa) {
-    const rSlug = norm(r.slug);
-    const rName = norm(r.name);
-    const slugMatch = rSlug === slugPart || rSlug.includes(slugPart) || slugPart.includes(rSlug);
-    if (slugMatch && orgMatches(r)) return r;
+    if (norm(r.slug) === slugPart && orgMatches(r)) return r;
+  }
+  // 1b) containment match — prefer benchmarked records and exact-ish variants:
+  //     'gemini-3-5-flash' should hit the bare record (coding: 70.1), not the
+  //     unbenchmarked '-medium'/'-non-reasoning' variants that merely contain it.
+  const variantTokens = ['nonreasoning', 'reasoning', 'low', 'medium', 'high', 'xhigh', 'minimal', 'thinking'];
+  const scoreOf = (r: Record<string, unknown>): number => {
+    const slug = norm(r.slug);
+    let s = 0;
+    if (slug === slugPart) s += 100;
+    const extra = slug.slice(slugPart.length).replace(/[^a-z0-9]/g, '');
+    if (extra && !variantTokens.some((v) => extra.startsWith(v))) s -= 50; // unrelated containment (e.g. '-lite') deprioritized
+    const evals = (r.evaluations as Record<string, unknown> | undefined) ?? {};
+    s += Object.values(evals).filter((v) => typeof v === 'number').length;
+    const d = String(r.release_date ?? '');
+    s += d > '2026-01-01' ? 2 : 0;
+    return s;
+  };
+  {
+    let best: Record<string, unknown> | null = null;
+    let bestScore = -Infinity;
+    for (const r of aa) {
+      const rSlug = norm(r.slug);
+      const slugMatch = rSlug.includes(slugPart) || slugPart.includes(rSlug);
+      if (slugMatch && orgMatches(r)) {
+        const s = scoreOf(r);
+        if (s > bestScore) { bestScore = s; best = r; }
+      }
+    }
+    if (best) return best;
   }
   // 2) name-based match with creator agreement
   for (const r of aa) {
@@ -200,8 +226,47 @@ export function matchAaRecord(
     }
     if (best) return best;
   }
+  // 5) token-order matching: portal "claude-opus-4.1" vs AA "claude-4-1-opus"
+  //    (same tokens, different order — containment matching can't see these)
+  const tokSet = (s: unknown): Set<string> => new Set(String(s ?? '').toLowerCase().match(/[a-z0-9]+/g) ?? []);
+  const portalToks = tokSet(base);
+  if (portalToks.size > 0) {
+    let best: Record<string, unknown> | null = null;
+    let bestExtra = Infinity;
+    for (const r of aa) {
+      const org = creatorOf(r);
+      if (!portalOrgs.some((p) => p === org || org.includes(p) || p.includes(org))) continue;
+      const aaToks = tokSet(r.slug);
+      aaToks.delete('reasoning'); aaToks.delete('nonreasoning');
+      if (portalToks.size <= aaToks.size && [...portalToks].every((t) => aaToks.has(t))) {
+        const extra = aaToks.size - portalToks.size;
+        if (extra < bestExtra) { bestExtra = extra; best = r; }
+      }
+    }
+    if (best) return best;
+  }
+  // 6) sibling-variant inheritance: AA benchmarks the reasoning variant of a
+  //    model family with coding but not the non-reasoning variant — match the
+  //    family's benchmarked record so metrics inherit.
+  const familyOf = (s: unknown): string => {
+    let x = norm(s);
+    for (const suf of ['nonreasoning', 'reasoning', 'adaptive', 'thinking', 'low', 'medium', 'high', 'xhigh', 'maxeffort', 'instruct']) x = x.replace(suf, '');
+    return x.replace(/-+$/, '');
+  };
+  const fam = familyOf(base);
+  let famBest: Record<string, unknown> | null = null;
+  let famScore = -1;
+  for (const r of aa) {
+    if (!orgMatches(r)) continue;
+    if (familyOf(r.slug) !== fam && familyOf(r.name) !== fam) continue;
+    const v = (r.evaluations as Record<string, unknown> | undefined)?.artificial_analysis_coding_index;
+    const score = typeof v === 'number' ? v : 0;
+    if (score > famScore) { famScore = score; famBest = r; }
+  }
+  if (famBest) return famBest;
   return null;
 }
+
 
 export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric[] {
   const out: Metric[] = [];
