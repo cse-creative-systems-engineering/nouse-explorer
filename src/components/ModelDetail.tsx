@@ -22,14 +22,76 @@ interface ModelDetailProps {
   model: ModelEntry | undefined;
 }
 
-function PricingCell({ label, value }: { label: string; value?: string }) {
+function PricingRow({ label, value, plain }: { label: string; value?: string; plain?: boolean }) {
   if (!value || value === '') return null;
+  if (plain) {
+    return (
+      <div className="kv">
+        <span className="kv-label">{label}</span>
+        <span className="kv-value">{formatUsd(perMillion(value))}</span>
+      </div>
+    );
+  }
   const perM = perMillion(value);
   return (
     <div className="kv">
       <span className="kv-label">{label}</span>
-      <span className="kv-value big">{formatUsd(perM)} <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}>/ 1M</span></span>
-      <span className="kv-per-token">{formatPerToken(value)} / token</span>
+      <span style={{ textAlign: 'right' }}>
+        <span className="kv-value">{formatUsd(perM)}</span>
+        <span className="kv-sub">{formatPerToken(value)} / token</span>
+      </span>
+    </div>
+  );
+}
+
+
+function KeyStats({ model }: { model: ModelEntry }) {
+  const resolved = resolvePricing(model.pricing);
+  const arch = model.architecture;
+  const outputPerM = perMillion(resolved.completion);
+  const inputPerM = perMillion(resolved.prompt);
+  const modalities = arch?.input_modalities ?? [];
+  const modalityChips = [
+    ...(modalities.includes('text') ? ['Text'] : []),
+    ...(modalities.includes('image') ? ['Image'] : []),
+    ...(modalities.includes('video') ? ['Video'] : []),
+    ...(modalities.includes('audio') ? ['Audio'] : []),
+  ];
+  const [speed, setSpeed] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const b = nouse();
+    if (!b?.research?.getModelMetrics) return;
+    void b.research.getModelMetrics(model.id).then((rows) => {
+      if (cancelled) return;
+      const s = (rows ?? []).find((m) => m.metric === 'median_output_tokens_per_second');
+      setSpeed(s && s.value > 0 ? s.value : null);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [model.id]);
+
+  const stats: Array<{ label: string; value: string; sub?: string; accent?: boolean }> = [];
+  if (isFinite(outputPerM)) stats.push({ label: 'Output price', value: formatUsd(outputPerM), sub: 'per 1M tokens', accent: true });
+  if (isFinite(inputPerM)) stats.push({ label: 'Input price', value: formatUsd(inputPerM), sub: 'per 1M tokens' });
+  if (model.context_length) stats.push({ label: 'Context', value: formatContext(model.context_length), sub: 'tokens' });
+  if (speed != null) stats.push({ label: 'Speed', value: `${Math.round(speed)}`, sub: 'tokens/sec' });
+  if (modalityChips.length > 0) stats.push({ label: 'Accepts', value: modalityChips.join(' · '), sub: 'modalities' });
+  if (model.pricing.original) {
+    const disc = Math.round((1 - parseFloat(resolved.prompt) / parseFloat(model.pricing.original.prompt)) * 100);
+    if (isFinite(disc) && disc > 0) stats.push({ label: 'Discount', value: `−${disc}%`, sub: 'vs list price', accent: true });
+  }
+
+  return (
+    <div className="modal-section">
+      <div className="key-stats">
+        {stats.map((s) => (
+          <div className={`key-stat${s.accent ? ' accent' : ''}`} key={s.label}>
+            <div className="key-stat-label">{s.label}</div>
+            <div className="key-stat-value">{s.value}</div>
+            {s.sub && <div className="key-stat-sub">{s.sub}</div>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -237,11 +299,11 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
         <div>
           {indepRows.map((r) => (
             <div className="bench-kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
-              <span className="bench-kv-label">{r.label}</span>
               <span>
-                <span className="bench-kv-value">{r.value}</span>
+                <span className="bench-kv-label">{r.label}</span>
                 {r.source && <span className="bench-kv-src">{r.source}</span>}
               </span>
+              <span className="bench-kv-value">{r.value}</span>
             </div>
           ))}
         </div>
@@ -254,11 +316,11 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
           <div>
             {providerRows.map((r) => (
               <div className="bench-kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
-                <span className="bench-kv-label">{r.label}</span>
                 <span>
-                  <span className="bench-kv-value provider-reported">{r.value}</span>
+                  <span className="bench-kv-label">{r.label}</span>
                   {r.source && <span className="bench-kv-src">{r.source}</span>}
                 </span>
+                <span className="bench-kv-value provider-reported">{r.value}</span>
               </div>
             ))}
           </div>
@@ -344,35 +406,29 @@ export function ModelDetail({ model }: ModelDetailProps) {
             </div>
           )}
 
-          <ProfileSection modelId={model.id} />
+          <KeyStats model={model} />
 
           <BenchmarksSection modelId={model.id} model={model} />
 
+          <ProfileSection modelId={model.id} />
+
           <div className="modal-section">
-            <h3 className="modal-section-title">Pricing (effective now)</h3>
+            <h3 className="modal-section-title">Pricing detail</h3>
             <div className="kv-grid">
-              <PricingCell label="Prompt" value={resolved.prompt} />
-              <PricingCell label="Completion" value={resolved.completion} />
-              <PricingCell label="Web search" value={resolved.web_search} />
-              <PricingCell label="Cache read" value={resolved.input_cache_read} />
-              <PricingCell label="Cache write" value={resolved.input_cache_write} />
-              <PricingCell label="Cache write 1h" value={resolved.input_cache_write_1h} />
-              <PricingCell label="Image" value={resolved.image} />
-              <PricingCell label="Request" value={resolved.request} />
+              <PricingRow label="Prompt (per 1M tokens)" value={resolved.prompt} />
+              <PricingRow label="Completion (per 1M tokens)" value={resolved.completion} />
+              <PricingRow label="Web search (per 1M tokens)" value={resolved.web_search} />
+              <PricingRow label="Cache read (per 1M tokens)" value={resolved.input_cache_read} />
+              <PricingRow label="Cache write (per 1M tokens)" value={resolved.input_cache_write} />
+              <PricingRow label="Cache write 1h (per 1M tokens)" value={resolved.input_cache_write_1h} />
+              <PricingRow label="Image (per 1M tokens)" value={resolved.image} />
+              <PricingRow label="Request" value={resolved.request} plain />
             </div>
             {model.pricing.original && (
-              <div className="kv-grid" style={{ marginTop: 10 }}>
-                <div className="kv">
-                  <span className="kv-label">Original prompt</span>
-                  <span className="kv-value big">{formatUsd(perMillion(model.pricing.original.prompt))} <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}>/ 1M</span></span>
-                  <span className="kv-value" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatPerToken(model.pricing.original.prompt)} / tok</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-label">Original completion</span>
-                  <span className="kv-value big">{formatUsd(perMillion(model.pricing.original.completion))} <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 4 }}>/ 1M</span></span>
-                  <span className="kv-value" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatPerToken(model.pricing.original.completion)} / tok</span>
-                </div>
-              </div>
+              <>
+                <PricingRow label="Original prompt (before discount)" value={model.pricing.original.prompt} />
+                <PricingRow label="Original completion (before discount)" value={model.pricing.original.completion} />
+              </>
             )}
           </div>
 
@@ -404,7 +460,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
             <div className="kv-grid">
               <div className="kv">
                 <span className="kv-label">Modality</span>
-                <span className="modal-modality">{arch?.modality ?? '—'}</span>
+                <span className="kv-value">{arch?.modality ?? '—'}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Tokenizer</span>
@@ -412,7 +468,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
               </div>
               <div className="kv">
                 <span className="kv-label">Instruct type</span>
-                <span className="kv-value">{arch?.instruct_type ?? 'not provided'}</span>
+                <span className="kv-value">{arch?.instruct_type ?? '—'}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Input modalities</span>
@@ -433,18 +489,16 @@ export function ModelDetail({ model }: ModelDetailProps) {
             <h3 className="modal-section-title">Limits</h3>
             <div className="kv-grid">
               <div className="kv">
-                <span className="kv-label">Context length</span>
-                <span className="kv-value big">{formatContext(model.context_length)}</span>
-                <span className="kv-per-token">catalog</span>
+                <span className="kv-label">Context length (catalog)</span>
+                <span className="kv-value">{formatContext(model.context_length)}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Provider max context</span>
-                <span className="kv-value big">{formatContext(model.top_provider?.context_length ?? 0)}</span>
-                <span className="kv-per-token">provider limit</span>
+                <span className="kv-value">{formatContext(model.top_provider?.context_length ?? 0)}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Max completion</span>
-                <span className="kv-value big">{formatContext(model.top_provider?.max_completion_tokens ?? 0)}</span>
+                <span className="kv-value">{formatContext(model.top_provider?.max_completion_tokens ?? 0)}</span>
               </div>
               <div className="kv">
                 <span className="kv-label">Moderated</span>
@@ -461,10 +515,12 @@ export function ModelDetail({ model }: ModelDetailProps) {
                   <span className="kv-label">Canonical slug</span>
                   <span className="kv-value">{model.canonical_slug}</span>
                 </div>
-                <div className="kv">
-                  <span className="kv-label">Hugging Face</span>
-                  <span className="kv-value">{model.hugging_face_id ?? '—'}</span>
-                </div>
+                {model.hugging_face_id && (
+                  <div className="kv">
+                    <span className="kv-label">Hugging Face</span>
+                    <span className="kv-value">{model.hugging_face_id}</span>
+                  </div>
+                )}
                 <div className="kv">
                   <span className="kv-label">Created</span>
                   <span className="kv-value">{model.created ? new Date(model.created * 1000).toISOString().slice(0, 10) : '—'}</span>

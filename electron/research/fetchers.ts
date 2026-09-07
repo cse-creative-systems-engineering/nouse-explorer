@@ -299,9 +299,14 @@ export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric
     price_1m_output: pric.price_1m_output_tokens,
     price_1m_blended_3_to_1: pric.price_1m_blended_3_to_1,
   };
+  // Percentage-style evals arrive as 0–1 fractions from AA; normalize to 0–100.
+  const FRACTION_METRICS = new Set(['gpqa', 'hle', 'scicode', 'livecodebench', 'mmlu_pro', 'ifbench', 'tau2', 'terminalbench_hard', 'terminalbench_v2_1', 'lcr', 'aime', 'aime_25', 'math_500']);
   for (const [metric, v] of Object.entries(map)) {
+    // speed/latency of exactly 0 = no measurement (batch variants), not a real value
+    if (metric.startsWith('median_') && v === 0) continue;
     if (typeof v === 'number' && Number.isFinite(v)) {
-      out.push({ model_id: modelId, metric, value: v, source_url: src, method: 'artificial-analysis' });
+      const value = FRACTION_METRICS.has(metric) && v <= 1.0 ? v * 100 : v;
+      out.push({ model_id: modelId, metric, value, source_url: src, method: 'artificial-analysis' });
     }
   }
   return out;

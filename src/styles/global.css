@@ -575,3 +575,27 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .modal .kv{padding:9px 12px}
 .modal .kv-value{font-size:13.5px;font-weight:600;margin-top:3px}
 .modal .kv-value.big{font-size:14.5px}
+
+/* ── modal: unified detail rows (all sections) ─────────────── */
+.modal .kv-grid{display:flex;flex-direction:column;gap:0}
+.modal .kv{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:8px 2px;border-bottom:1px solid rgba(245,245,245,.06);border-radius:0;background:none;border-left:none;border-right:none;border-top:none}
+.modal .kv:last-child{border-bottom:none}
+.modal .kv-label{font-size:12.5px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--text2);flex:none}
+.modal .kv-value{font-family:'JetBrains Mono';font-size:13.5px;font-weight:600;margin-top:0;text-align:right;white-space:nowrap}
+.modal .kv-value.big{font-size:13.5px}
+.modal .kv-sub{display:block;font-family:'JetBrains Mono';font-size:10.5px;color:var(--text3);margin-top:2px;text-align:right}
+.modal .kv-provider{color:#f0c14b;font-style:italic}
+
+/* benchmarks rows: constrain width so sparse sections don't stretch across the modal */
+.bench-kv{max-width:560px}
+.modal-section .bench-note{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* ── key stats band: the numbers users scan first ──────────── */
+.key-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.key-stat{padding:12px 14px;border-radius:12px;background:var(--glass);border:1px solid var(--border)}
+.key-stat.accent{border-color:rgba(237,255,69,.35);background:rgba(237,255,69,.05)}
+.key-stat-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3)}
+.key-stat-value{font-family:'JetBrains Mono';font-size:20px;font-weight:700;color:var(--text);margin-top:4px}
+.key-stat.accent .key-stat-value{color:var(--accent)}
+.key-stat-sub{font-size:10px;color:var(--text3);margin-top:2px}
