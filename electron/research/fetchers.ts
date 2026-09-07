@@ -126,18 +126,79 @@ export function matchAaRecord(
   contextLength: number | null,
   aa: Array<Record<string, unknown>>,
 ): Record<string, unknown> | null {
-  const prov = id.split('/')[0];
-  const slugPart = id.split('/').slice(1).join('/').split(':')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Portal provider prefixes vs AA creator slugs often differ — map them.
+  const CREATOR_ALIASES: Record<string, string[]> = {
+    qwen: ['alibaba', 'qwen'],
+    'z-ai': ['zai', 'zhipu'],
+    moonshotai: ['kimi', 'moonshot'],
+    'x-ai': ['xai'],
+    'meta-llama': ['meta'],
+    mistralai: ['mistral'],
+    'bytedance-seed': ['bytedance', 'seed'],
+    amazon: ['aws', 'amazon'],
+    meituan: ['longcat', 'meituan'],
+    kwaipilot: ['kwaikat', 'kwaipilot'],
+    deepseek: ['deepseek'],
+    google: ['google'],
+    openai: ['openai'],
+    anthropic: ['anthropic'],
+  };
+  const rawProv = id.split('/')[0].replace(/^~/, '');
+  const prov = rawProv;
+  const creatorCandidates = CREATOR_ALIASES[rawProv] ?? [rawProv];
+  const portalOrgs = creatorCandidates.map(norm);
+  const base = id.split('/').slice(1).join('/').split(':')[0];
+  const slugPart = norm(base);
+
+  const creatorOf = (r: Record<string, unknown>): string => {
+    const mc = (r.model_creator as Record<string, unknown> | undefined) ?? {};
+    return norm(mc.slug ?? mc.name);
+  };
+  const orgMatches = (r: Record<string, unknown>): boolean => {
+    const org = creatorOf(r);
+    if (!org) return false;
+    return portalOrgs.some((p) => p === org || org.includes(p) || p.includes(org));
+  };
+
+  // 1) exact / containment slug match with creator agreement
   for (const r of aa) {
-    const rName = String(r.name ?? '').toLowerCase();
-    const rSlug = String(r.slug ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const creator = ((r.model_creator as Record<string, unknown> | undefined)?.name ?? '').toString().toLowerCase();
-    const creatorSlug = ((r.model_creator as Record<string, unknown> | undefined)?.slug ?? '').toString().toLowerCase();
-    const nameMatch = name.toLowerCase().includes(rName) || rName.includes(name.toLowerCase().split(':')[0].trim());
+    const rSlug = norm(r.slug);
+    const rName = norm(r.name);
     const slugMatch = rSlug === slugPart || rSlug.includes(slugPart) || slugPart.includes(rSlug);
-    const orgMatch = creatorSlug.includes(prov) || prov.includes(creatorSlug) || creator.includes(prov);
-    if (slugMatch && orgMatch) return r;
-    if (nameMatch && orgMatch) return r;
+    if (slugMatch && orgMatches(r)) return r;
+  }
+  // 2) name-based match with creator agreement
+  for (const r of aa) {
+    const rName = norm(r.name);
+    if (rName && (rName.includes(norm(name).split(':')[0]) || norm(name).split(':')[0].includes(rName)) && orgMatches(r)) return r;
+  }
+  // 3) progressive slug prefixes (strip trailing version/variant tokens)
+  const toks = base.toLowerCase().split(/[-_.]/).filter(Boolean);
+  for (let i = toks.length - 1; i > 0; i--) {
+    const cand = norm(toks.slice(0, i).join('-'));
+    if (!cand) continue;
+    for (const r of aa) {
+      if (norm(r.slug) === cand && orgMatches(r)) return r;
+    }
+  }
+  // 4) rolling aliases ("*-latest"): resolve to the newest AA release of the
+  // same creator whose model family matches (glm-latest → newest GLM, etc.)
+  if (base.endsWith('-latest')) {
+    const family = norm(base.slice(0, -'-latest'.length));
+    const familyRoot = family.split('-')[0]; // 'glm', 'gpt', 'claude', 'grok', 'kimi', 'gemini', 'nova'
+    let best: Record<string, unknown> | null = null;
+    let bestDate = '';
+    for (const r of aa) {
+      if (!orgMatches(r) && creatorOf(r) !== portalOrgs[0]) continue;
+      const rName = norm(r.name);
+      const rSlug = norm(r.slug);
+      if (rSlug.startsWith(familyRoot) || rName.startsWith(familyRoot)) {
+        const d = String(r.release_date ?? '');
+        if (d > bestDate) { bestDate = d; best = r; }
+      }
+    }
+    if (best) return best;
   }
   return null;
 }

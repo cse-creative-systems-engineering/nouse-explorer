@@ -264,8 +264,10 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 
 /* ── table view (F1) ───────────────────────────────── */
 .table-wrap{margin:0 28px 24px}
-.table-scroll{overflow:auto;max-height:100%;border:1px solid var(--border);border-radius:14px;background:var(--glass);backdrop-filter:blur(20px)}
-.table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+/* Bounded height makes THIS element the scroll container, so the sticky
+   thead stays visible while rows scroll beneath it. */
+.table-scroll{overflow:auto;max-height:calc(100vh - 250px);border:1px solid var(--border);border-radius:14px;background:var(--glass);backdrop-filter:blur(20px);overscroll-behavior:contain}
+.table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed}
 .table td{overflow:hidden;text-overflow:ellipsis}
 .table th .col-resizer{position:absolute;top:0;right:-5px;width:11px;height:100%;cursor:col-resize;z-index:3;touch-action:none}
 .table th .col-resizer::after{content:'';position:absolute;top:15%;bottom:15%;right:5px;width:2px;border-radius:2px;background:transparent;transition:background .15s}
