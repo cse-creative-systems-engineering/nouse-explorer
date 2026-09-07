@@ -561,3 +561,17 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 
 /* provider-reported (unofficial) scores — amber to mark self-reported data */
 .table td.provider-reported{color:#f0c14b;font-style:italic}
+
+/* benchmarks section: clean dl-style rows instead of tiled kv-grid */
+.bench-kv{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:7px 2px;border-bottom:1px solid rgba(245,245,245,.06)}
+.bench-kv:last-child{border-bottom:none}
+.bench-kv-label{font-size:12.5px;color:var(--text2);font-weight:400}
+.bench-kv-value{font-family:'JetBrains Mono';font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap}
+.bench-kv-value.provider-reported{color:#f0c14b;font-style:italic}
+.bench-kv-src{display:block;font-size:10px;color:var(--text3);margin-top:1px;font-weight:400}
+
+/* modal kv tiles: calmer values, less vertical spread */
+.modal .kv{padding:9px 12px}
+.modal .kv-value{font-size:13.5px;font-weight:600;margin-top:3px}
+.modal .kv-value.big{font-size:14.5px}

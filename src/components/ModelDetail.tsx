@@ -234,12 +234,14 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
         </div>
       )}
       {indepRows.length > 0 && (
-        <div className="kv-grid">
+        <div>
           {indepRows.map((r) => (
-            <div className="kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
-              <span className="kv-label">{r.label}</span>
-              <span className="kv-value big">{r.value}</span>
-              {r.source && <span className="kv-per-token">{r.source}</span>}
+            <div className="bench-kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
+              <span className="bench-kv-label">{r.label}</span>
+              <span>
+                <span className="bench-kv-value">{r.value}</span>
+                {r.source && <span className="bench-kv-src">{r.source}</span>}
+              </span>
             </div>
           ))}
         </div>
@@ -249,12 +251,14 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
           <div style={{ margin: '12px 0 8px', fontSize: 10, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#f0c14b' }}>
             Provider-reported (self-claimed, not independently verified)
           </div>
-          <div className="kv-grid">
+          <div>
             {providerRows.map((r) => (
-              <div className="kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
-                <span className="kv-label">{r.label}</span>
-                <span className="kv-value big" style={{ color: '#f0c14b', fontStyle: 'italic' }}>{r.value}</span>
-                {r.source && <span className="kv-per-token">{r.source}</span>}
+              <div className="bench-kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
+                <span className="bench-kv-label">{r.label}</span>
+                <span>
+                  <span className="bench-kv-value provider-reported">{r.value}</span>
+                  {r.source && <span className="bench-kv-src">{r.source}</span>}
+                </span>
               </div>
             ))}
           </div>
