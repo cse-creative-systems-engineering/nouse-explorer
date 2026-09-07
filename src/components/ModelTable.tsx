@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
-import { COLUMN_BY_ID } from '../lib/columns';
+import { COLUMN_BY_ID, modalityIcon } from '../lib/columns';
 import { $columnOrder } from '../lib/columnStore';
 import { useStore } from '@nanostores/react';
 import { DiscountBadge } from './DiscountBadge';
@@ -190,6 +190,22 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
                           </div>
                           <div className="cell-id" style={{ marginTop: 2 }}>{m.id}</div>
                         </td>
+                      );
+                    }
+                    if (c.render === 'modality-icons') {
+                      const dir = c.modalityDir === 'out'
+                        ? (m.architecture?.output_modalities ?? [])
+                        : (m.architecture?.input_modalities ?? []);
+                      const kinds = ['text', 'image', 'video', 'audio', 'file'] as const;
+                      const present = kinds.filter((k) => dir.includes(k));
+                      const iconsHtml = present.map((k) => modalityIcon(k, 10)).join('');
+                      return (
+                        <td
+                          key={c.id}
+                          className="cell-mods"
+                          title={`${c.label}: ${present.length ? present.join(', ') : 'none'}`}
+                          dangerouslySetInnerHTML={{ __html: iconsHtml || '<span class="mods-none">\u2014</span>' }}
+                        />
                       );
                     }
                     let raw = c.value(m, mExtra);

@@ -73,6 +73,14 @@ export function buildVariantOptions(metricCoverage: Record<string, number>, prof
     { id: 'cheap', label: 'Cheap (< $0.50/1M out)' },
     { id: 'multimodal', label: 'Multimodal' },
     { id: 'textonly', label: 'Text-only' },
+    // modality selectors — pick exact input/output capability combinations
+    { id: 'in_image', label: 'Accepts: Image input' },
+    { id: 'in_video', label: 'Accepts: Video input' },
+    { id: 'in_audio', label: 'Accepts: Audio input' },
+    { id: 'in_file', label: 'Accepts: File input' },
+    { id: 'textonly_in', label: 'Accepts: Text input only' },
+    { id: 'out_image', label: 'Outputs: Image' },
+    { id: 'out_audio', label: 'Outputs: Audio' },
   ];
   // inferred from researched data
   if ((metricCoverage['hf_downloads'] ?? 0) > 0) opts.push({ id: 'popular', label: 'Popular (top 50)', inferred: true });
@@ -150,6 +158,16 @@ export function applyVariant(
       const mods = m.architecture?.input_modalities ?? [];
       return mods.length === 0 || (mods.length === 1 && mods[0] === 'text');
     });
+    case 'in_image': return list.filter((m) => (m.architecture?.input_modalities ?? []).includes('image'));
+    case 'in_video': return list.filter((m) => (m.architecture?.input_modalities ?? []).includes('video'));
+    case 'in_audio': return list.filter((m) => (m.architecture?.input_modalities ?? []).includes('audio'));
+    case 'in_file': return list.filter((m) => (m.architecture?.input_modalities ?? []).includes('file'));
+    case 'textonly_in': return list.filter((m) => {
+      const mods = m.architecture?.input_modalities ?? [];
+      return mods.length === 0 || (mods.length === 1 && mods[0] === 'text');
+    });
+    case 'out_image': return list.filter((m) => (m.architecture?.output_modalities ?? []).includes('image'));
+    case 'out_audio': return list.filter((m) => (m.architecture?.output_modalities ?? []).includes('audio'));
     case 'popular': return list.filter((m) => extra[m.id]?.hf_downloads != null).sort((a, b) => (extra[b.id]?.hf_downloads ?? 0) - (extra[a.id]?.hf_downloads ?? 0)).slice(0, 50);
     case 'has_speed': return list.filter((m) => extra[m.id]?.median_output_tokens_per_second != null);
     case 'profiled': return list.filter((m) => profiledIds.has(m.id));

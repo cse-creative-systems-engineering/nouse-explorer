@@ -10,6 +10,9 @@ import type { ModelEntry } from './types';
 export interface ColumnDef {
   id: string;
   label: string;
+  /** 'modality-icons' renders tiny SVG icons per modality instead of text */
+  render?: 'modality-icons';
+  modalityDir?: 'in' | 'out';
   /** One-line plain-language summary shown in the Column Manager. */
   summary: string;
   /** Thorough explanation shown in the header tooltip. */
@@ -70,8 +73,59 @@ export function isNonCodingModel(id: string): boolean {
   return NON_CODING_MARKERS.some((m) => low.includes(m)) || NON_CODING_EXACT.has(low);
 }
 
+
+/** Modality icon glyph renderer (tiny inline SVGs, text-height). */
+const MODALITY_COLORS: Record<string, string> = {
+  text: 'var(--text3)',
+  image: '#b48eff',
+  video: '#4ec9e8',
+  audio: '#5dd39e',
+  file: '#d8b26a',
+};
+
+export function modalityIcon(kind: 'text' | 'image' | 'video' | 'audio' | 'file', size = 10): string {
+  const stroke = MODALITY_COLORS[kind] ?? 'currentColor';
+  const common = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"`;
+  switch (kind) {
+    case 'text': return `<svg ${common}><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>`;
+    case 'image': return `<svg ${common}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
+    case 'video': return `<svg ${common}><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>`;
+    case 'audio': return `<svg ${common}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    case 'file': return `<svg ${common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+  }
+}
+
+
 export const COLUMNS: ColumnDef[] = [
   // ── Model ────────────────────────────────────────────
+  {
+    id: 'input_mods',
+    label: 'In',
+    group: 'Model',
+    defaultOn: true,
+    defaultWidth: 74,
+    render: 'modality-icons',
+    modalityDir: 'in',
+    defaultSortDir: 'asc',
+    summary: 'What input types the model accepts (icons).',
+    tip: 'Input modalities the model accepts: text, image, video, audio, file (icons left to right).\n\nPRACTICAL: Pick models with the image icon for vision tasks (screenshot analysis, document understanding), video for temporal media understanding. Text-only models ignore attached files silently in some APIs — check before wiring multimodal inputs.\n\nCHOOSE BY: A hard filter — if the icon isn\u2019t there, the model cannot accept that input type regardless of price or intelligence.',
+    value: (m) => (m.architecture?.input_modalities ?? []).join(','),
+    format: () => '',
+  },
+  {
+    id: 'output_mods',
+    label: 'Out',
+    group: 'Model',
+    defaultOn: true,
+    defaultWidth: 60,
+    render: 'modality-icons',
+    modalityDir: 'out',
+    defaultSortDir: 'asc',
+    summary: 'What output types the model can generate (icons).',
+    tip: 'Output modalities the model can generate: text, image, video, audio.\n\nPRACTICAL: Almost all models output text only; image-output models (native image generation) are the exception. If your product needs generated images, audio, or video from the model itself, filter here.\n\nCHOOSE BY: A hard requirement column for generative products; irrelevant if you only need text back.',
+    value: (m) => (m.architecture?.output_modalities ?? []).join(','),
+    format: () => '',
+  },
   {
     id: 'name',
     label: 'Model',
