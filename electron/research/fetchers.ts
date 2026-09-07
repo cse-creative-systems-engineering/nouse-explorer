@@ -158,10 +158,20 @@ export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric
     livecodebench: evals.livecodebench,
     scicode: evals.scicode,
     aime: evals.aime,
+    aime_25: evals.aime_25,
+    hle: evals.hle,
+    lcr: evals.lcr,
+    ifbench: evals.ifbench,
+    tau2: evals.tau2,
+    terminalbench_hard: evals.terminalbench_hard,
+    terminalbench_v2_1: evals.terminalbench_v2_1,
+    math_500: evals.math_500,
     median_output_tokens_per_second: rec.median_output_tokens_per_second,
     median_time_to_first_token_seconds: rec.median_time_to_first_token_seconds,
+    median_time_to_first_answer_token: rec.median_time_to_first_answer_token,
     price_1m_input: pric.price_1m_input_tokens,
     price_1m_output: pric.price_1m_output_tokens,
+    price_1m_blended_3_to_1: pric.price_1m_blended_3_to_1,
   };
   for (const [metric, v] of Object.entries(map)) {
     if (typeof v === 'number' && Number.isFinite(v)) {

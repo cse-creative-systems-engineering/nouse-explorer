@@ -7,6 +7,7 @@ import { HeroStats } from './HeroStats';
 import { GlassToggle } from './GlassToggle';
 import { ShowpieceCard } from './ShowpieceCard';
 import { ModelTable } from './ModelTable';
+import { ColumnManager } from './ColumnManager';
 import { ModelDetail } from './ModelDetail';
 import { SettingsPanel } from './SettingsPanel';
 import { WatchesPanel } from './WatchesPanel';
@@ -60,6 +61,7 @@ export function ModelExplorer() {
   const [profiledIds, setProfiledIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [watchesOpen, setWatchesOpen] = useState(false);
+  const [colmanOpen, setColmanOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDone = useRef(0);
   const prevRunning = useRef(false);
@@ -234,6 +236,15 @@ export function ModelExplorer() {
         >
           🔔
         </button>
+        <div className="deck-divider" aria-hidden="true" />
+        <button
+          type="button"
+          className="btn colman-btn"
+          onClick={() => setColmanOpen(true)}
+          title="Add, exclude, or reorder table columns"
+        >
+          Columns
+        </button>
         <div className="vt">
           <button
             type="button"
@@ -310,6 +321,7 @@ export function ModelExplorer() {
       )}
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {colmanOpen && <ColumnManager onClose={() => setColmanOpen(false)} />}
       {watchesOpen && <WatchesPanel onClose={() => setWatchesOpen(false)} />}
       {selected && <ModelDetail model={selected} />}
     </div>
