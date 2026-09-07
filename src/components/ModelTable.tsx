@@ -72,8 +72,10 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
     const def = COLUMN_BY_ID[sortKey];
     if (!def) return models;
     return [...models].sort((a, b) => {
-      const va = def.value(a, extra?.[a.id]);
-      const vb = def.value(b, extra?.[b.id]);
+      const rawVa = def.value(a, extra?.[a.id]);
+      const rawVb = def.value(b, extra?.[b.id]);
+      const va = (rawVa === null || rawVa === undefined) && def.providerValue ? (def.providerValue(a, extra?.[a.id]) ?? null) : (rawVa ?? null);
+      const vb = (rawVb === null || rawVb === undefined) && def.providerValue ? (def.providerValue(b, extra?.[b.id]) ?? null) : (rawVb ?? null);
       if (va === null && vb === null) return 0;
       if (va === null) return 1;
       if (vb === null) return -1;
@@ -190,13 +192,21 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
                         </td>
                       );
                     }
-                    const raw = c.value(m, mExtra);
+                    let raw = c.value(m, mExtra);
+                    let providerFallback = false;
+                    if ((raw === null || raw === undefined) && c.providerValue) {
+                      const pv = c.providerValue(m, mExtra);
+                      if (pv != null) { raw = pv; providerFallback = true; }
+                    }
+                    const isProvider = providerFallback || ('unofficial' in c && c.unofficial === true);
                     return (
                       <td
                         key={c.id}
-                        className="cell-num"
+                        className={`cell-num${isProvider ? ' provider-reported' : ''}`}
                         style={{ textAlign: c.align ?? 'left' }}
-                        title={typeof raw === 'number'
+                        title={isProvider
+                          ? `${c.label}: ${c.format(raw)} — provider-reported score (self-reported by the model's creator; different scale & harness from independently-benchmarked columns)`
+                          : typeof raw === 'number'
                           ? `${c.label}: ${c.format(raw)}${sources?.[m.id]?.[c.id] ? ` — source: ${sources[m.id][c.id] === 'openrouter' ? 'OpenRouter (AA composite)' : sources[m.id][c.id] === 'artificial-analysis' ? 'Artificial Analysis research' : sources[m.id][c.id]}` : ''}`
                           : undefined}
                       >

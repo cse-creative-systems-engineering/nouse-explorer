@@ -558,3 +558,6 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .colman-group-block{display:flex;flex-direction:column;gap:4px;margin-top:8px}
 .colman-group-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--brand-lift);margin:4px 0 2px;opacity:.9}
 .colman input[type="checkbox"]{accent-color:var(--brand-lift);width:15px;height:15px;cursor:pointer;flex:none}
+
+/* provider-reported (unofficial) scores — amber to mark self-reported data */
+.table td.provider-reported{color:#f0c14b;font-style:italic}

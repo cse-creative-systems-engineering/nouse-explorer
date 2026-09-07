@@ -15,13 +15,17 @@ export interface ColumnDef {
   /** Thorough explanation shown in the header tooltip. */
   tip: string;
   /** Grouping in the Column Manager (identification / pricing / benchmarks / research). */
-  group: 'Model' | 'Pricing' | 'Benchmarks (catalog)' | 'Research (Artificial Analysis)' | 'Research (Hugging Face)';
+  group: 'Model' | 'Pricing' | 'Benchmarks (catalog)' | 'Research (Artificial Analysis)' | 'Research (Hugging Face)' | 'Provider-reported';
   align?: 'left' | 'right';
   defaultWidth: number;
   /** true = shown by default */
   defaultOn: boolean;
   /** true = cannot be excluded (Model name) */
   pinned?: boolean;
+  /** provider-reported (not independently benchmarked) — renders amber */
+  unofficial?: boolean;
+  /** provider-reported fallback value when the main source has no data */
+  providerValue?: (m: ModelEntry, extra?: Record<string, number>) => number | null;
   value: (m: ModelEntry, extra?: Record<string, number>) => number | string | null;
   format: (v: number | string | null) => string;
   /** Sortable asc by default (text, dates) vs desc (scores, prices). */
@@ -248,6 +252,7 @@ export const COLUMNS: ColumnDef[] = [
     tip: 'GPQA (Graduate-Level Google-Proof Q&A) — extremely hard multiple-choice science questions written by PhD domain experts, designed so that even skilled non-experts with web access score ~34%. A top-tier test of deep scientific reasoning: frontier models score 60\u201385%, older models fall below 50%. Higher is better.',
     summary: 'PhD-level science reasoning exam — frontier models score 60–85%.',
     value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.gpqa ?? null),
+    providerValue: (_m, extra) => extra?.provider_gpqa_diamond ?? null,
     format: num(1),
   },
   {
@@ -284,6 +289,7 @@ export const COLUMNS: ColumnDef[] = [
     tip: 'LiveCodeBench — competitive-programming problems (from LeetCode/AtCoder/Codeforces) published continuously after the model\u2019s training cutoff, so scores can\u2019t be gamed by memorization. Measures genuine algorithmic problem-solving: read the problem, write correct code. Higher is better.',
     summary: 'Fresh competitive-programming problems — can’t be memorized.',
     value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.livecodebench ?? null),
+    providerValue: (_m, extra) => extra?.provider_livecodebench_v6 ?? extra?.provider_livecodebench ?? null,
     format: num(1),
   },
   {
@@ -368,6 +374,7 @@ export const COLUMNS: ColumnDef[] = [
     tip: 'Terminal-Bench (hard split) — real terminal/shell tasks: navigate an unfamiliar filesystem, install dependencies, debug, edit files, run builds. This is the closest benchmark to \u201ccan it actually operate a computer\u201d and the agentic coding workflows built on that. Higher is better.',
     summary: 'Real terminal/shell tasks — "can it operate a computer".',
     value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.terminalbench_hard ?? null),
+    providerValue: (_m, extra) => extra?.provider_terminalbench ?? null,
     format: num(1),
   },
   {
@@ -382,6 +389,23 @@ export const COLUMNS: ColumnDef[] = [
     value: (m, extra) => isNonCodingModel(m.id) ? 'N/A' : (extra?.lcr ?? null),
     format: num(1),
   },
+
+  // ── SWE-bench (provider-reported) — no AA equivalent exists ──
+  {
+    id: 'swebench',
+    label: 'SWE-bench (provider)',
+    group: 'Provider-reported',
+    defaultOn: false,
+    defaultWidth: 150,
+    align: 'right',
+    summary: 'Provider-claimed SWE-bench % — self-reported, amber.',
+    tip: 'SWE-bench (Verified or Pro, whichever the provider published) as reported by the model\u2019s own provider — percentage of real GitHub issues resolved, self-reported in the provider\u2019s chosen harness. Amber italic marks it as provider-claimed: different scale and methodology from the AA indices, and providers pick their best setup. Use for models where no independent AA data exists; treat as indicative.',
+    value: () => null,
+    providerValue: (_m, extra) => extra?.provider_swebench_verified ?? extra?.provider_swebench_pro ?? null,
+    format: (v) => (typeof v === 'number' ? `${v.toFixed(1)}%` : dash),
+    unofficial: true,
+  },
+
   // ── Hugging Face community signal ────────────────────
   {
     id: 'downloads',
