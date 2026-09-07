@@ -49,6 +49,13 @@ export function buildSortOptions(metricCoverage: Record<string, number>): SortOp
     { id: 'livecode_desc', label: 'LiveCodeBench: High to Low', pending: !covered('livecodebench') },
     { id: 'mmlu_desc', label: 'MMLU-Pro: High to Low', pending: !covered('mmlu_pro') },
     { id: 'gpqa_desc', label: 'GPQA: High to Low', pending: !covered('gpqa') },
+    // modality grouping sorts — bring capable models to the top of the current view
+    { id: 'in_image_first', label: 'Image input models first' },
+    { id: 'in_video_first', label: 'Video input models first' },
+    { id: 'in_audio_first', label: 'Audio input models first' },
+    { id: 'in_file_first', label: 'File input models first' },
+    { id: 'out_image_first', label: 'Image output models first' },
+    { id: 'out_audio_first', label: 'Audio output models first' },
     { id: 'aime_desc', label: 'AIME: High to Low', pending: !covered('aime') },
     { id: 'math_desc', label: 'AA Math: High to Low', pending: !covered('artificial_analysis_math_index') },
     { id: 'likes_desc', label: 'Most Liked (HF)', pending: !covered('hf_likes') },
@@ -122,6 +129,12 @@ export function sortValue(m: ModelEntry, sortId: string, extra: Record<string, n
     case 'aime_desc': return extra?.aime ?? null;
     case 'math_desc': return extra?.artificial_analysis_math_index ?? null;
     case 'likes_desc': return extra?.hf_likes ?? null;
+    case 'in_image_first': return (m.architecture?.input_modalities ?? []).includes('image') ? 1 : 0;
+    case 'in_video_first': return (m.architecture?.input_modalities ?? []).includes('video') ? 1 : 0;
+    case 'in_audio_first': return (m.architecture?.input_modalities ?? []).includes('audio') ? 1 : 0;
+    case 'in_file_first': return (m.architecture?.input_modalities ?? []).includes('file') ? 1 : 0;
+    case 'out_image_first': return (m.architecture?.output_modalities ?? []).includes('image') ? 1 : 0;
+    case 'out_audio_first': return (m.architecture?.output_modalities ?? []).includes('audio') ? 1 : 0;
     default: return null;
   }
 }
