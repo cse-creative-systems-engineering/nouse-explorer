@@ -5,11 +5,9 @@ import { $selectedId } from '../lib/store';
 import { nouse } from '../lib/nouse';
 import {
   DAY_LABELS,
-  fmtScore,
   formatContext,
   formatPerToken,
   formatUsd,
-  hasBenchmark,
   isBatch,
   isFreeVariant,
   isMultimodal,
@@ -17,6 +15,7 @@ import {
   providerFromId,
   resolvePricing,
 } from '../lib/pricing';
+import { isNonCodingModel } from '../lib/columns';
 import { DiscountBadge } from './DiscountBadge';
 
 interface ModelDetailProps {
@@ -24,7 +23,7 @@ interface ModelDetailProps {
 }
 
 function PricingCell({ label, value }: { label: string; value?: string }) {
-  if (!value || value === '' ) return null;
+  if (!value || value === '') return null;
   const perM = perMillion(value);
   return (
     <div className="kv">
@@ -140,6 +139,149 @@ function ProfileSection({ modelId }: { modelId: string }) {
   );
 }
 
+/** Metric display metadata for the benchmarks section. */
+const METRIC_DEFS: Array<{ key: string; label: string; tip: string; digits?: number; suffix?: string; provider?: boolean }> = [
+  { key: 'artificial_analysis_intelligence_index', label: 'Intelligence index', tip: 'Artificial Analysis composite of reasoning ability across many evaluations. Higher is better; frontier models cluster in the 50–70 range.', digits: 1 },
+  { key: 'artificial_analysis_coding_index', label: 'Coding index', tip: 'Artificial Analysis composite of code-writing and code-reasoning ability. Higher is better; frontier models sit in the 60–80 band.', digits: 1 },
+  { key: 'artificial_analysis_agentic_index', label: 'Agentic index', tip: 'Multi-step tool-using agent task ability (AA retired this metric — only models whose catalog embeds it show a value).', digits: 1 },
+  { key: 'artificial_analysis_math_index', label: 'Math index', tip: 'Artificial Analysis composite of mathematical reasoning. Higher is better.', digits: 1 },
+  { key: 'gpqa', label: 'GPQA', tip: 'Graduate-level Google-Proof Q&A: PhD-written science questions. Frontier models score 60–85%.', digits: 1 },
+  { key: 'hle', label: 'HLE', tip: 'Humanity\u2019s Last Exam — the hardest expert-written benchmark; even small differences matter.', digits: 1 },
+  { key: 'mmlu_pro', label: 'MMLU-Pro', tip: 'Broad knowledge + reasoning across 14 domains. Strong models score 70–85%.', digits: 1 },
+  { key: 'livecodebench', label: 'LiveCodeBench', tip: 'Competitive-programming problems released after training cutoffs — can\u2019t be memorized.', digits: 1 },
+  { key: 'scicode', label: 'SciCode', tip: 'Graduate-level scientific computing problems. Very hard.', digits: 2 },
+  { key: 'aime', label: 'AIME', tip: 'Olympiad-qualifier math (2024 set). Elite models score 80–90%+.', digits: 1 },
+  { key: 'aime_25', label: 'AIME 2025', tip: 'The 2025 AIME set — more contamination-resistant than 2024.', digits: 1 },
+  { key: 'math_500', label: 'MATH-500', tip: 'Competition mathematics (algebra, geometry, number theory).', digits: 1 },
+  { key: 'ifbench', label: 'IFBench', tip: 'How precisely the model follows explicit instruction constraints.', digits: 1 },
+  { key: 'tau2', label: 'τ²-Bench', tip: 'Simulated customer-service agent tasks with tools.', digits: 1 },
+  { key: 'terminalbench_hard', label: 'TerminalBench', tip: 'Real terminal/shell tasks — closest benchmark to “can it operate a computer”.', digits: 1 },
+  { key: 'lcr', label: 'LCR', tip: 'Artificial Analysis\u2019 single-skill code-reasoning read.', digits: 1 },
+  { key: 'median_output_tokens_per_second', label: 'Speed', tip: 'Median output tokens per second, measured independently by Artificial Analysis. Below ~20 t/s feels slow for chat.', digits: 0, suffix: ' t/s' },
+  { key: 'median_time_to_first_token_seconds', label: 'TTFT', tip: 'Median time to first token, in seconds — perceived responsiveness. Lower is better.', digits: 2, suffix: ' s' },
+  { key: 'median_time_to_first_answer_token', label: 'TFAT', tip: 'Time to the first token of the substantive answer (skips reasoning preamble). Lower is better.', digits: 2, suffix: ' s' },
+  { key: 'hf_downloads', label: 'HF downloads', tip: 'Total Hugging Face downloads of the open weights — a popularity signal, not a quality measure.', digits: 0 },
+  { key: 'hf_likes', label: 'HF likes', tip: 'Hugging Face likes — community endorsement, like GitHub stars.', digits: 0 },
+  // provider-reported (self-claimed) scores
+  { key: 'provider_swebench_verified', label: 'SWE-bench Verified', tip: 'Provider-reported (self-claimed) SWE-bench Verified score — the provider chose the harness and published the number. Not independently verified; not comparable to AA indices.', digits: 1, suffix: '%', provider: true },
+  { key: 'provider_swebench_pro', label: 'SWE-bench Pro', tip: 'Provider-reported SWE-bench Pro score — self-claimed, provider-chosen harness. Indicative only.', digits: 1, suffix: '%', provider: true },
+  { key: 'provider_swebench_multilingual', label: 'SWE-bench Multilingual', tip: 'Provider-reported SWE-bench Multilingual score — self-claimed. Indicative only.', digits: 1, suffix: '%', provider: true },
+  { key: 'provider_livecodebench_v6', label: 'LiveCodeBench v6', tip: 'Provider-reported LiveCodeBench v6 pass@1 — self-claimed. Indicative only.', digits: 1, suffix: '%', provider: true },
+  { key: 'provider_livecodebench', label: 'LiveCodeBench', tip: 'Provider-reported LiveCodeBench pass@1 (version per the provider\u2019s report) — self-claimed. Indicative only.', digits: 1, suffix: '%', provider: true },
+  { key: 'provider_terminalbench', label: 'Terminal-Bench', tip: 'Provider-reported Terminal-Bench score — self-claimed. Indicative only.', digits: 1, suffix: '%', provider: true },
+];
+
+const SOURCE_LABEL: Record<string, string> = {
+  'artificial-analysis': 'Artificial Analysis (independent benchmarking)',
+  openrouter: 'OpenRouter (AA composite)',
+  'provider-reported': 'the model provider\u2019s own model card / announcement (self-reported)',
+  'provider-api': 'the provider\u2019s API (downloads/likes from Hugging Face)',
+};
+
+const fmtNum = (v: number, digits: number, suffix?: string) =>
+  `${digits === 0 ? Math.round(v).toLocaleString() : v.toFixed(digits)}${suffix ?? ''}`;
+
+function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEntry }) {
+  const [metrics, setMetrics] = useState<Array<{ metric: string; value: number; method: string; source_url: string }> | null>(null);
+  const bench = model.benchmarks;
+  const aa = bench?.artificial_analysis;
+
+  useEffect(() => {
+    let cancelled = false;
+    const b = nouse();
+    if (!b?.research?.getModelMetrics) { setMetrics([]); return; }
+    void b.research.getModelMetrics(modelId).then((rows) => {
+      if (!cancelled) setMetrics(rows ?? []);
+    }).catch(() => { if (!cancelled) setMetrics([]); });
+    return () => { cancelled = true; };
+  }, [modelId]);
+
+  const researched = new Map((metrics ?? []).map((m) => [m.metric, m]));
+  const nonCoding = isNonCodingModel(model.id);
+
+  // merge: catalog-embedded AA first, then researched values, then provider-reported
+  const rows: Array<{ label: string; value: string; tip: string; provider?: boolean; source: string | null }> = [];
+  for (const def of METRIC_DEFS) {
+    let value: number | null = null;
+    let source: string | null = null;
+    if (def.key.startsWith('artificial_analysis') && aa && typeof (aa as Record<string, unknown>)[def.key.replace('artificial_analysis_', '')] === 'number') {
+      value = (aa as Record<string, unknown>)[def.key.replace('artificial_analysis_', '')] as number;
+      source = 'catalog (embedded)';
+    }
+    if (value === null && researched.has(def.key)) {
+      const m = researched.get(def.key)!;
+      value = m.value;
+      source = SOURCE_LABEL[m.method] ?? m.method;
+    }
+    if (value === null) continue;
+    rows.push({ label: def.label, value: fmtNum(value, def.digits ?? 1, def.suffix), tip: def.tip, provider: def.provider, source });
+  }
+
+  const providerRows = rows.filter((r) => r.provider);
+  const indepRows = rows.filter((r) => !r.provider);
+
+  return (
+    <div className="modal-section">
+      <h3 className="modal-section-title">Benchmarks &amp; measurements</h3>
+      {nonCoding && (
+        <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(245,245,245,.04)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
+          This is an embedding / audio model — coding and reasoning benchmarks don\u2019t apply to it (shown as N/A in the table).
+        </div>
+      )}
+      {!nonCoding && rows.length === 0 && (
+        <div style={{ padding: '12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.20)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          No benchmark data from any source yet — this model hasn\u2019t been scored by Artificial Analysis, isn\u2019t covered by OpenRouter, and its provider hasn\u2019t published verified scores.
+        </div>
+      )}
+      {indepRows.length > 0 && (
+        <div className="kv-grid">
+          {indepRows.map((r) => (
+            <div className="kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
+              <span className="kv-label">{r.label}</span>
+              <span className="kv-value big">{r.value}</span>
+              {r.source && <span className="kv-per-token">{r.source}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {providerRows.length > 0 && (
+        <>
+          <div style={{ margin: '12px 0 8px', fontSize: 10, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#f0c14b' }}>
+            Provider-reported (self-claimed, not independently verified)
+          </div>
+          <div className="kv-grid">
+            {providerRows.map((r) => (
+              <div className="kv" key={r.label} title={`${r.tip}${r.source ? ` — source: ${r.source}` : ''}`}>
+                <span className="kv-label">{r.label}</span>
+                <span className="kv-value big" style={{ color: '#f0c14b', fontStyle: 'italic' }}>{r.value}</span>
+                {r.source && <span className="kv-per-token">{r.source}</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {(bench?.design_arena?.length ?? 0) > 0 && (
+        <div className="bench-list" style={{ marginTop: 12 }}>
+          <div className="bench-row head">
+            <span>arena / category</span>
+            <span>elo</span>
+            <span>win %</span>
+            <span>rank</span>
+          </div>
+          {bench!.design_arena!.slice(0, 50).map((d, i) => (
+            <div key={`${d.arena}-${d.category}-${i}`} className="bench-row">
+              <span>{d.arena} · {d.category}</span>
+              <span>{d.elo}</span>
+              <span>{d.win_rate != null ? d.win_rate.toFixed(1) : '—'}</span>
+              <span>{d.rank}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ModelDetail({ model }: ModelDetailProps) {
   const selectedId = useStore($selectedId);
 
@@ -157,10 +299,6 @@ export function ModelDetail({ model }: ModelDetailProps) {
 
   const resolved = resolvePricing(model.pricing);
   const arch = model.architecture;
-  const bench = model.benchmarks;
-  const hasBench = hasBenchmark(model);
-  const designArena = bench?.design_arena ?? [];
-  const aa = bench?.artificial_analysis;
   const hasOverrides = Array.isArray(model.pricing.overrides) && model.pricing.overrides.length > 0;
 
   return (
@@ -189,18 +327,22 @@ export function ModelDetail({ model }: ModelDetailProps) {
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="6" />
+              <line x1="6" y1="18" x2="18" y2="18" />
             </svg>
           </button>
         </header>
 
         <div className="modal-body">
-          <ProfileSection modelId={model.id} />
           {model.description && (
             <div className="modal-section">
               <p className="modal-desc">{model.description}</p>
             </div>
           )}
+
+          <ProfileSection modelId={model.id} />
+
+          <BenchmarksSection modelId={model.id} model={model} />
 
           <div className="modal-section">
             <h3 className="modal-section-title">Pricing (effective now)</h3>
@@ -305,54 +447,6 @@ export function ModelDetail({ model }: ModelDetailProps) {
                 <span className="kv-value">{model.top_provider?.is_moderated ? 'yes' : 'no'}</span>
               </div>
             </div>
-          </div>
-
-          <div className="modal-section">
-            <h3 className="modal-section-title">Benchmarks <span className="badge" style={{ marginLeft: 6 }}>embedded</span></h3>
-            {!hasBench && (
-              <div style={{ padding: '12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.20)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Benchmarks pending — the research engine will fetch these from external sources.
-              </div>
-            )}
-            {hasBench && aa && (
-              <div className="kv-grid">
-                <div className="kv">
-                  <span className="kv-label">Intelligence index</span>
-                  <span className="kv-value big">{fmtScore(aa.intelligence_index)}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-label">Coding index</span>
-                  <span className="kv-value big">{fmtScore(aa.coding_index)}</span>
-                </div>
-                <div className="kv">
-                  <span className="kv-label">Agentic index</span>
-                  <span className="kv-value big">{fmtScore(aa.agentic_index)}</span>
-                </div>
-              </div>
-            )}
-            {designArena.length > 0 && (
-              <div className="bench-list">
-                <div className="bench-row head">
-                  <span>arena / category</span>
-                  <span>elo</span>
-                  <span>win %</span>
-                  <span>rank</span>
-                </div>
-                {designArena.slice(0, 50).map((d, i) => (
-                  <div key={`${d.arena}-${d.category}-${i}`} className="bench-row">
-                    <span>{d.arena} · {d.category}</span>
-                    <span>{d.elo}</span>
-                    <span>{fmtScore(d.win_rate)}</span>
-                    <span>{d.rank}</span>
-                  </div>
-                ))}
-                {designArena.length > 50 && (
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, padding: '4px 8px' }}>
-                    + {designArena.length - 50} more…
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {model.canonical_slug && (
