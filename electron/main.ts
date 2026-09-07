@@ -114,6 +114,18 @@ ipcMain.handle('research:metrics', () => {
  * zero coverage is returned as pending so the UI can show a disabled chip
  * ("waiting for research") that lights up when the batch lands.
  */
+ipcMain.handle('research:sources', () => {
+  const db = getDb();
+  const rows = db
+    .prepare(`SELECT model_id, metric, method FROM metric_observations`)
+    .all() as Array<{ model_id: string; metric: string; method: string }>;
+  const byModel: Record<string, Record<string, string>> = {};
+  for (const r of rows) {
+    (byModel[r.model_id] ??= {})[r.metric] = r.method;
+  }
+  return byModel;
+});
+
 ipcMain.handle('research:axes', () => {
   const db = getDb();
   const rows = db

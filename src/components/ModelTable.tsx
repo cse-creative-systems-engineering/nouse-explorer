@@ -25,9 +25,10 @@ function loadWidths(): Partial<Record<SortKey, number>> {
 interface ModelTableProps {
   models: ModelEntry[];
   extra?: Record<string, Record<string, number>>;
+  sources?: Record<string, Record<string, string>>;
 }
 
-export function ModelTable({ models, extra }: ModelTableProps) {
+export function ModelTable({ models, extra, sources }: ModelTableProps) {
   const order = useStore($columnOrder);
   const cols = useMemo(() => order.map((id) => COLUMN_BY_ID[id]).filter(Boolean), [order]);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -195,7 +196,9 @@ export function ModelTable({ models, extra }: ModelTableProps) {
                         key={c.id}
                         className="cell-num"
                         style={{ textAlign: c.align ?? 'left' }}
-                        title={typeof raw === 'number' ? `${c.label}: ${c.format(raw)}` : undefined}
+                        title={typeof raw === 'number'
+                          ? `${c.label}: ${c.format(raw)}${sources?.[m.id]?.[c.id] ? ` — source: ${sources[m.id][c.id] === 'openrouter' ? 'OpenRouter (AA composite)' : sources[m.id][c.id] === 'artificial-analysis' ? 'Artificial Analysis research' : sources[m.id][c.id]}` : ''}`
+                          : undefined}
                       >
                         {c.format(raw)}
                       </td>

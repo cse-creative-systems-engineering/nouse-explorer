@@ -57,6 +57,7 @@ export interface NouseBridge {
     getAxes: () => Promise<ResearchAxis[]>;
     getProfile: (modelId: string) => Promise<{ profile: unknown; researched_at: string } | null>;
     getProfiled: () => Promise<string[]>;
+    getSources: () => Promise<Record<string, Record<string, string>>>;
     onProgress: (cb: (p: ResearchProgress) => void) => () => void;
   };
   settings: {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import type { ModelEntry } from '../lib/types';
-import { $models, $loading, $error, $selectedId, $view, $autoRefresh, $research } from '../lib/store';
+import { $models, $loading, $error, $selectedId, $view, $autoRefresh, $research, $metricSources } from '../lib/store';
 import { TitleBar } from './TitleBar';
 import { HeroStats } from './HeroStats';
 import { GlassToggle } from './GlassToggle';
@@ -88,6 +88,7 @@ export function ModelExplorer() {
     if (!b?.research) return;
     void b.research.getMetrics().then(setExtra).catch(() => {});
     void b.research.getProfiled().then((ids) => setProfiledIds(new Set(ids))).catch(() => {});
+    void b.research.getSources?.().then((s) => $metricSources.set(s)).catch(() => {});
   };
   useEffect(() => {
     loadResearch();
@@ -306,7 +307,7 @@ export function ModelExplorer() {
           </div>
         )}
         {filtered.length > 0 && view === 'table' && (
-          <ModelTable models={filtered} extra={extra} />
+          <ModelTable models={filtered} extra={extra} sources={$metricSources.get()} />
         )}
         {error && models.length > 0 && (
           <div style={{ padding: '10px 28px', color: 'var(--warn)', fontSize: 12 }}>

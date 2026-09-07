@@ -76,3 +76,4 @@ export const $stats = computed([$models, $fetchedAt], (models, fetchedAt) => {
     fetchedAt,
   };
 });
+export const $metricSources = atom<Record<string, Record<string, string>>>({});

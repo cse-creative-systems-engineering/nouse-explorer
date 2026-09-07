@@ -310,3 +310,48 @@ export function aaMetrics(modelId: string, rec: Record<string, unknown>): Metric
 export function persistMetrics(d: DatabaseSync, metrics: Metric[]): void {
   for (const m of metrics) recordMetric(d, m);
 }
+
+// ── OpenRouter tier ─────────────────────────────────────────────────
+// OpenRouter exposes the AA composite indices for models AA's own endpoint
+// doesn't cover (and is what powers the Portal's embedded benchmarks).
+// Same scale as AA indices; stored with method 'openrouter' for provenance.
+const OR_URL = 'https://openrouter.ai/api/v1/models';
+let orCache: Array<Record<string, unknown>> | null = null;
+let orFetchedAt = 0;
+const OR_TTL_MS = 24 * 60 * 60 * 1000;
+
+export async function openRouterCatalog(): Promise<Array<Record<string, unknown>>> {
+  const now = Date.now();
+  if (orCache && now - orFetchedAt < OR_TTL_MS) return orCache;
+  try {
+    const res = await fetch(OR_URL, { headers: { 'User-Agent': 'NouseExplorer/0.1' }, signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+    const j = (await res.json()) as { data?: Array<Record<string, unknown>> };
+    orCache = j.data ?? [];
+    orFetchedAt = now;
+    return orCache;
+  } catch (e) {
+    console.error('[research] OpenRouter fetch failed', (e as Error).message);
+    orCache = [];
+    orFetchedAt = now;
+    return orCache;
+  }
+}
+
+export function orMetrics(modelId: string, orModel: Record<string, unknown>): Metric[] {
+  const out: Metric[] = [];
+  const src = `https://openrouter.ai/${modelId}`;
+  const aa = (orModel.benchmarks as Record<string, unknown> | undefined)?.artificial_analysis as Record<string, unknown> | undefined;
+  if (!aa) return out;
+  const map: Record<string, unknown> = {
+    artificial_analysis_intelligence_index: aa.intelligence_index,
+    artificial_analysis_coding_index: aa.coding_index,
+    artificial_analysis_agentic_index: aa.agentic_index,
+  };
+  for (const [metric, v] of Object.entries(map)) {
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out.push({ model_id: modelId, metric, value: v, source_url: src, method: 'openrouter' });
+    }
+  }
+  return out;
+}

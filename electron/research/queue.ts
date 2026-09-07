@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { enqueue, getDb, queueSnapshot } from './db.js';
-import { aaMetrics, artificialAnalysis, matchAaRecord, persistMetrics, providerFirst } from './fetchers.js';
+import { aaMetrics, artificialAnalysis, matchAaRecord, orMetrics, openRouterCatalog, persistMetrics, providerFirst } from './fetchers.js';
 import { getSecret } from './settings.js';
 import { distillProfile, type RawEvidence } from './distill.js';
 
@@ -60,6 +60,12 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
     } catch {
       aa = [];
     }
+    let orList: Array<Record<string, unknown>> = [];
+    try {
+      orList = await openRouterCatalog();
+    } catch {
+      orList = [];
+    }
 
     async function processOne(modelId: string, tier: number): Promise<void> {
       try {
@@ -84,6 +90,18 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
                VALUES (?, 'artificial-analysis', ?, 0.9, ?)`,
             ).run(modelId, slug, new Date().toISOString());
           }
+        }
+
+        // Tier 1c: OpenRouter (AA composites for models the AA endpoint misses)
+        const orModel = orList.find((m) => {
+          const mid = String(m.id ?? '');
+          const slug = String(m.canonical_slug ?? '');
+          const base = modelId.split(':')[0];
+          return mid === base || mid === modelId || slug.startsWith(base);
+        });
+        if (orModel) {
+          const om = orMetrics(modelId, orModel);
+          if (om.length > 0) persistMetrics(db, om);
         }
 
         // Tier 3: qualitative distillation (only when the user's Nous key is set)
