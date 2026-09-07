@@ -240,6 +240,89 @@ const SOURCE_LABEL: Record<string, string> = {
   'provider-api': 'the provider\u2019s API (downloads/likes from Hugging Face)',
 };
 
+
+/** Percentile bands across the catalog (computed from the research DB). */
+const BANDS: Record<string, [number, number]> = {
+  // [p50, p90] — above p90 = top tier, p50..p90 = solid, below p50 = entry
+  artificial_analysis_coding_index: [51.5, 76.1],
+  artificial_analysis_intelligence_index: [29.7, 53.2],
+  median_output_tokens_per_second: [75.7, 205.8],
+  gpqa: [85.4, 92.9],
+  hle: [27.8, 46.2],
+};
+
+function bandOf(metric: string, value: number): 'top' | 'solid' | 'entry' | null {
+  const b = BANDS[metric];
+  if (!b) return null;
+  if (value >= b[1]) return 'top';
+  if (value >= b[0]) return 'solid';
+  return 'entry';
+}
+
+/** "What is this model for" — synthesized from capabilities + benchmark bands
+ *  when no distilled research profile exists. */
+function UseCaseSynthesis({ model, metrics }: { model: ModelEntry; metrics: Array<{ metric: string; value: number; method: string }> | null }) {
+  const researched = new Map((metrics ?? []).map((m) => [m.metric, m.value]));
+  const get = (k: string) => researched.get(k) ?? (model.benchmarks?.artificial_analysis as Record<string, number> | undefined)?.[k.replace('artificial_analysis_', '')] ?? null;
+
+  const lines: Array<{ icon: string; text: string }> = [];
+
+  // Coding capability
+  const coding = get('artificial_analysis_coding_index');
+  if (coding != null) {
+    const b = bandOf('artificial_analysis_coding_index', coding);
+    if (b === 'top') lines.push({ icon: '▲', text: `Top-tier coder (coding index ${coding.toFixed(0)} — upper decile of the catalog). Suited for coding agents, complex refactors, and production dev tooling.` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Capable coder (coding index ${coding.toFixed(0)} — above catalog median). Reliable for IDE assistance and routine development tasks.` });
+    else lines.push({ icon: '▼', text: `Entry-level coding (coding index ${coding.toFixed(0)}). Fine for snippets and simple scripts; expect limitations on complex, multi-file work.` });
+  }
+
+  // General intelligence
+  const intel = get('artificial_analysis_intelligence_index');
+  if (intel != null) {
+    const b = bandOf('artificial_analysis_intelligence_index', intel);
+    if (b === 'top') lines.push({ icon: '▲', text: `Frontier general reasoning (intelligence index ${intel.toFixed(0)}) — handles planning, research, and multi-step analysis.` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Solid general reasoning (intelligence index ${intel.toFixed(0)}) — a good default assistant for mixed workloads.` });
+    else lines.push({ icon: '▼', text: `Light general capability (intelligence index ${intel.toFixed(0)}) — best for simple routing, classification, or high-volume simple tasks.` });
+  }
+
+  // Speed
+  const speed = get('median_output_tokens_per_second');
+  if (speed != null && speed > 0) {
+    const b = bandOf('median_output_tokens_per_second', speed);
+    if (b === 'top') lines.push({ icon: '▲', text: `Very fast (${Math.round(speed)} tok/s) — comfortable for interactive chat, live agents, and IDE streaming.` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Comfortable speed (${Math.round(speed)} tok/s) for chat and interactive use.` });
+    else lines.push({ icon: '▼', text: `Slower output (${Math.round(speed)} tok/s) — better suited to background/batch work than live chat.` });
+  }
+
+  // Modalities
+  const mods = model.architecture?.input_modalities ?? [];
+  if (mods.some((m) => m !== 'text')) {
+    const caps = mods.filter((m) => m !== 'text').map((m) => m[0].toUpperCase() + m.slice(1)).join(', ');
+    lines.push({ icon: '▲', text: `Multimodal: accepts ${caps} input alongside text.` });
+  }
+
+  // Provider-claimed note
+  if (metrics?.some((m) => m.method === 'provider-reported')) {
+    lines.push({ icon: '◆', text: 'Includes provider-reported (self-claimed) scores below — shown in amber; not independently verified.' });
+  }
+
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="modal-section">
+      <h3 className="modal-section-title">What this model is for</h3>
+      <div className="profile-claims">
+        {lines.map((l, i) => (
+          <div key={i} className={`profile-claim ${l.icon === '▲' ? 'good' : l.icon === '▼' ? 'bad' : 'good'}`}>
+            <span className="claim-mark">{l.icon}</span>
+            <div className="claim-text">{l.text}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const fmtNum = (v: number, digits: number, suffix?: string) =>
   `${digits === 0 ? Math.round(v).toLocaleString() : v.toFixed(digits)}${suffix ?? ''}`;
 
@@ -285,6 +368,7 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
   return (
     <div className="modal-section">
       <h3 className="modal-section-title">Benchmarks &amp; measurements</h3>
+      <UseCaseSynthesis model={model} metrics={metrics} />
       {nonCoding && (
         <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(245,245,245,.04)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
           This is an embedding / audio model — coding and reasoning benchmarks don\u2019t apply to it (shown as N/A in the table).
