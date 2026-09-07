@@ -320,11 +320,13 @@ let orCache: Array<Record<string, unknown>> | null = null;
 let orFetchedAt = 0;
 const OR_TTL_MS = 24 * 60 * 60 * 1000;
 
-export async function openRouterCatalog(): Promise<Array<Record<string, unknown>>> {
+export async function openRouterCatalog(apiKey?: string | null): Promise<Array<Record<string, unknown>>> {
   const now = Date.now();
   if (orCache && now - orFetchedAt < OR_TTL_MS) return orCache;
   try {
-    const res = await fetch(OR_URL, { headers: { 'User-Agent': 'NouseExplorer/0.1' }, signal: AbortSignal.timeout(20000) });
+    const headers: Record<string, string> = { 'User-Agent': 'NouseExplorer/0.1' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const res = await fetch(OR_URL, { headers, signal: AbortSignal.timeout(20000) });
     if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
     const j = (await res.json()) as { data?: Array<Record<string, unknown>> };
     orCache = j.data ?? [];

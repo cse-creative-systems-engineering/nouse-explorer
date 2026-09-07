@@ -62,7 +62,7 @@ export async function runQueue(progress: (p: ResearchProgress) => void = broadca
     }
     let orList: Array<Record<string, unknown>> = [];
     try {
-      orList = await openRouterCatalog();
+      orList = await openRouterCatalog(getSecret('openrouter_api_key'));
     } catch {
       orList = [];
     }
