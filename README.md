@@ -4,6 +4,21 @@
 
 Nouse Explorer pulls the complete live catalog (~390 models), enriches it with independent benchmark data, and presents every number with its meaning: what each metric measures, where it came from, and what it predicts for your workload. No black-box rankings, no hidden scoring — every claim carries its evidence.
 
+![Nouse Explorer — the full catalog table over the full-bleed etching](docs/screenshot-table.png)
+
+### Every model. Every metric. Every reason.
+
+| | |
+|---|---|
+| ![Cards view](docs/screenshot-cards.png) | ![Detail card](docs/screenshot-detail.png) |
+| *Card view — glass cards over the etching* | *Model detail — key stats up top, capability synthesis* |
+| ![Benchmarks & measurements](docs/screenshot-detail-benchmarks.png) | ![Column Manager](docs/screenshot-column-manager.png) |
+| *Benchmarks with per-value source attribution* | *Column Manager — drag to reorder, toggle to add/exclude* |
+| ![Variant filters](docs/screenshot-variant-filters.png) | ![Modality filter applied](docs/screenshot-modality-filtered.png) |
+| *Variant filters incl. per-modality selectors* | *"Accepts: Image input" — the In/Out icon columns at work* |
+| ![Sort options](docs/screenshot-sort-options.png) | ![Decision-guidance tooltip](docs/screenshot-tooltip.png) |
+| *Sort options incl. modality grouping sorts* | *Every header explains what the metric means and when to weigh it* |
+
 ## Why
 
 Most model pickers tell you *which* model to use. Nouse Explorer tells you *why* — and teaches you enough to disagree with it.

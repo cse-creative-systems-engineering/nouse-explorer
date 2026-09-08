@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
 import { COLUMN_BY_ID, modalityIcon } from '../lib/columns';
@@ -36,6 +37,7 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
   const [widths, setWidths] = useState<Partial<Record<SortKey, number>>>(() => loadWidths());
   const [drag, setDrag] = useState<{ key: SortKey; startX: number; startW: number } | null>(null);
   const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const [headerTip, setHeaderTip] = useState<{ label: string; tip: string; x: number; y: number } | null>(null);
 
   const visibleCols = useMemo(() => cols.filter((c) => widths[c.id] !== 0), [cols, widths]);
 
@@ -144,10 +146,22 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
                     style={{ textAlign: c.align ?? 'left', width: widths[colKey] ?? c.defaultWidth }}
                     aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
-                    <span className="th-label" tabIndex={0}>
+                    <span
+                      className="th-label"
+                      tabIndex={0}
+                      onMouseEnter={(e) => {
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setHeaderTip({ label: c.label, tip: c.tip, x: r.left, y: r.bottom });
+                      }}
+                      onMouseLeave={() => setHeaderTip(null)}
+                      onFocus={(e) => {
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setHeaderTip({ label: c.label, tip: c.tip, x: r.left, y: r.bottom });
+                      }}
+                      onBlur={() => setHeaderTip(null)}
+                    >
                       {c.label}
                       <span className={`chev ${active ? (sortDir === 'asc' ? 'up' : 'down') : ''}`}>▾</span>
-                      <span className="th-tip" role="tooltip">{c.tip}</span>
                     </span>
                     {ci < visibleCols.length - 1 && (
                       <span
@@ -252,6 +266,17 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
           </tbody>
         </table>
       </div>
+      {headerTip && createPortal(
+        <div
+          className="header-tip-portal"
+          style={{ left: Math.min(headerTip.x, window.innerWidth - 370), top: headerTip.y + 8 }}
+          role="tooltip"
+        >
+          <div className="header-tip-label">{headerTip.label}</div>
+          <div className="header-tip-body">{headerTip.tip}</div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
