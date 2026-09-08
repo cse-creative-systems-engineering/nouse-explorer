@@ -238,9 +238,9 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
                         className={`cell-num${isProvider ? ' provider-reported' : ''}`}
                         style={{ textAlign: c.align ?? 'left' }}
                         title={isProvider
-                          ? `${c.label}: ${c.format(raw)} — provider-reported score (self-reported by the model's creator; different scale & harness from independently-benchmarked columns)`
+                          ? `${c.label}: ${c.format(raw)} — provider-reported score (self-reported by the model's creator; different scale & harness from independently-benchmarked columns)${c.summary ? `\n\n${c.summary}` : ''}`
                           : typeof raw === 'number'
-                          ? `${c.label}: ${c.format(raw)}${sources?.[m.id]?.[c.id] ? ` — source: ${sources[m.id][c.id] === 'openrouter' ? 'OpenRouter (AA composite)' : sources[m.id][c.id] === 'artificial-analysis' ? 'Artificial Analysis research' : sources[m.id][c.id]}` : ''}`
+                          ? `${c.label}: ${c.format(raw)}${sources?.[m.id]?.[c.id] ? `\nSource: ${sources[m.id][c.id] === 'openrouter' ? 'OpenRouter (AA composite)' : sources[m.id][c.id] === 'artificial-analysis' ? 'Artificial Analysis research' : sources[m.id][c.id]}` : ''}${c.summary ? `\n\n${c.summary}` : ''}`
                           : undefined}
                       >
                         {c.format(raw)}

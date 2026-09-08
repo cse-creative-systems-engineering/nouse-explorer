@@ -668,3 +668,55 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .card-compact > div:first-child{flex-wrap:wrap;row-gap:4px}
 
 .research-stamp{font-size:10px;color:var(--text3);white-space:nowrap;font-family:"JetBrains Mono"}
+
+
+/* ============ LIGHT THEME ============ */
+:root[data-theme="light"]{
+  --bg:#f4f4fb;
+  --surface:#ffffff;
+  --panel-inverted:#ececf6;
+  --text:#12122a;
+  --text2:rgba(18,18,42,.8);
+  --text3:rgba(18,18,42,.45);
+  --brand:#0000f2;
+  --brand-lift:#4646e8;
+  --accent:#c8b800;
+  --accent-glow:rgba(184,164,0,.3);
+  --warn:#a06a00;
+  --glass:rgba(18,18,42,.04);
+  --glass2:rgba(18,18,42,.1);
+  --border:rgba(18,18,42,.12);
+}
+
+/* onboarding card */
+.onboard-card{max-width:640px;margin:28px auto 8px;padding:22px 26px;border:1px solid var(--border);
+  border-radius:14px;background:var(--surface);box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.onboard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.onboard-title{font-weight:600;font-size:15px;color:var(--text)}
+.onboard-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
+.onboard-close:hover{color:var(--text);background:var(--glass)}
+.onboard-card p{font-size:13px;line-height:1.55;color:var(--text2);margin-bottom:16px}
+.onboard-actions{display:flex;gap:10px}
+.onboard-actions .primary{background:var(--brand);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.onboard-actions .primary:hover{background:var(--brand-lift)}
+.onboard-actions .ghost{background:none;border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.onboard-actions .ghost:hover{color:var(--text);border-color:var(--glass2)}
+
+/* theme button */
+.theme-btn{font-size:14px}
+
+
+/* ============ LIGHT THEME OVERRIDES (hardcoded colors that break on light bg) ============ */
+:root[data-theme="light"] .stage{color:#1a1a33}
+:root[data-theme="light"] .art-bg{opacity:.06}  /* etching becomes a subtle watermark */
+:root[data-theme="light"] .art-bg-credit{color:#555}
+:root[data-theme="light"] .art-bg-credit b{color:#333}
+:root[data-theme="light"] .badge.accent{color:#8a7d00;background:rgba(184,164,0,.12);border-color:rgba(184,164,0,.35)}
+:root[data-theme="light"] .badge.success{color:#0e7a55;background:rgba(20,150,105,.12);border-color:rgba(20,150,105,.35)}
+:root[data-theme="light"] .badge.warning{color:#8a5a00;background:rgba(200,140,0,.14);border-color:rgba(200,140,0,.4)}
+:root[data-theme="light"] .badge.info{color:#3d3dcc;background:rgba(70,70,232,.1);border-color:rgba(70,70,232,.3)}
+:root[data-theme="light"] .table td.provider-reported{color:#8a6300}
+:root[data-theme="light"] .bench-kv-value.provider-reported{color:#8a6300}
+:root[data-theme="light"] .rb-pulse{background:#4646e8;box-shadow:0 0 12px rgba(70,70,232,.6)}
+:root[data-theme="light"] .claim-src:hover{background:rgba(70,70,232,.15);color:#1a1a33}
+:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.55));backdrop-filter:blur(12px)}

@@ -22,6 +22,7 @@ import {
   sortValue,
 } from '../lib/filterbar';
 import { nouse } from '../lib/nouse';
+import { $theme, setTheme } from '../lib/themeStore';
 
 function isFree(m: ModelEntry): boolean {
   if (m.id.endsWith(':free')) return true;
@@ -48,6 +49,7 @@ function hasBench(m: ModelEntry, extra?: Record<string, number>): boolean {
 }
 
 export function ModelExplorer() {
+  const theme = useStore($theme);
   const models = useStore($models);
   const loading = useStore($loading);
   const error = useStore($error);
@@ -98,6 +100,10 @@ export function ModelExplorer() {
   const [profiledIds, setProfiledIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [lastResearch, setLastResearch] = useState<string | null>(null);
+  const [keyStatus, setKeyStatus] = useState<{ nous: boolean; aa: boolean } | null>(null);
+  const [onboardDismissed, setOnboardDismissed] = useState(() => {
+    try { return localStorage.getItem('nouse.onboard.dismissed') === '1'; } catch { return false; }
+  });
   const [watchesOpen, setWatchesOpen] = useState(false);
   const [colmanOpen, setColmanOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -134,6 +140,7 @@ export function ModelExplorer() {
   useEffect(() => {
     loadResearch();
     const b = nouse();
+    b?.settings?.get?.().then((s) => setKeyStatus({ nous: s.nousApiKeySet, aa: s.aaApiKeySet })).catch(() => {});
     if (b?.alerts) {
       void b.alerts.setCatalog(models);
       void b.alerts.list().then((ws) => setActiveWatchCount(ws.filter((w) => w.active).length)).catch(() => {});
@@ -345,6 +352,16 @@ export function ModelExplorer() {
         <div className="deck-divider" aria-hidden="true" />
         <button
           type="button"
+          className="magic-btn theme-btn"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+          aria-label="Toggle color theme"
+        >
+          {theme === 'light' ? '☾' : '☀'}
+        </button>
+        <div className="deck-divider" aria-hidden="true" />
+        <button
+          type="button"
           className="magic-btn bell-btn"
           onClick={() => setWatchesOpen(true)}
           title="Alerts & watches — track price drops, discounts, and model changes"
@@ -390,6 +407,44 @@ export function ModelExplorer() {
       </div>
 
       <div className="results" ref={resultsRef} onScroll={onResultsScroll}>
+        {!loading && keyStatus && !keyStatus.nous && !onboardDismissed && (
+          <div className="onboard-card" role="note">
+            <div className="onboard-head">
+              <span className="onboard-title">Research needs an API key</span>
+              <button
+                type="button"
+                className="onboard-close"
+                onClick={() => {
+                  setOnboardDismissed(true);
+                  try { localStorage.setItem('nouse.onboard.dismissed', '1'); } catch {}
+                }}
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+            <p>
+              The catalog below works out of the box, but per-model research — benchmark scores,
+              pricing intelligence, the “What this model is for” synthesis — needs a Nous API key
+              (and optionally an Artificial Analysis key for the full benchmark suite).
+            </p>
+            <div className="onboard-actions">
+              <button type="button" className="btn primary" onClick={() => setSettingsOpen(true)}>
+                Add a key in Settings
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => {
+                  setOnboardDismissed(true);
+                  try { localStorage.setItem('nouse.onboard.dismissed', '1'); } catch {}
+                }}
+              >
+                Browse without it
+              </button>
+            </div>
+          </div>
+        )}
         {loading && models.length === 0 && (
           <div className="empty-state" role="status" aria-live="polite">
             <div className="spinner" aria-hidden="true" />
