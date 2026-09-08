@@ -14,6 +14,8 @@
   --glass:rgba(245,245,245,.05);   /* --hpv2-panel */
   --glass2:rgba(245,245,245,.15);
   --border:rgba(245,245,245,.09);
+  --thead-bg:rgba(10,10,32,.92);
+  --sticky-bg:rgb(13,13,38);
   --success:#34d399; --info:#6e6eff;
   --ease:cubic-bezier(.22,1,.36,1);
 }
@@ -273,7 +275,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .table th .col-resizer::after{content:'';position:absolute;top:15%;bottom:15%;right:5px;width:2px;border-radius:2px;background:transparent;transition:background .15s}
 .table th:hover .col-resizer::after,.table th .col-resizer.active::after{background:rgba(110,110,255,.55)}
 .table th .col-resizer.active::after{background:var(--brand-lift);box-shadow:0 0 8px rgba(110,110,255,.8)}
-.table thead th{position:sticky;top:0;background:rgba(10,10,32,.92);backdrop-filter:blur(16px);text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;z-index:2}
+.table thead th{position:sticky;top:0;background:var(--thead-bg);backdrop-filter:blur(16px);text-align:left;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;z-index:2}
 .table thead th.sortable:hover{color:var(--text)}
 .table tbody td{padding:8px 12px;border-bottom:1px solid rgba(245,245,245,.05);white-space:nowrap}
 .table tbody tr{cursor:pointer;transition:background .12s}
@@ -613,7 +615,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .table tbody tr:nth-child(even){background:rgba(245,245,245,.025)}
 .table tbody tr:nth-child(even):hover{background:rgba(110,110,255,.07)}
 /* sticky Model column (first data column) during horizontal scroll */
-.table th:first-child,.table td:first-child{position:sticky;left:0;z-index:1;background:rgb(13,13,38)}
+.table th:first-child,.table td:first-child{position:sticky;left:0;z-index:1;background:var(--sticky-bg)}
 .table thead th:first-child{z-index:4}
 .table tbody td:first-child{box-shadow:1px 0 0 var(--border)}
 
@@ -644,8 +646,8 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .compare-scroll{max-height:62vh;overflow:auto;margin-top:8px}
 .compare-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
 .compare-table th,.compare-table td{padding:7px 10px;border-bottom:1px solid rgba(245,245,245,.06);text-align:right;font-family:'JetBrains Mono';font-size:12px}
-.compare-table th{position:sticky;top:0;background:rgb(13,13,38);z-index:2}
-.compare-table .compare-metric-col{text-align:left;font-family:'Sora';font-weight:600;color:var(--text2);position:sticky;left:0;background:rgb(13,13,38);z-index:1;min-width:150px}
+.compare-table th{position:sticky;top:0;background:var(--thead-bg);z-index:2}
+.compare-table .compare-metric-col{text-align:left;font-family:'Sora';font-weight:600;color:var(--text2);position:sticky;left:0;background:var(--sticky-bg);z-index:1;min-width:150px}
 .compare-table thead .compare-metric-col{z-index:3}
 .compare-name{font-family:'Sora';font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;margin-bottom:4px}
 .compare-unpin{border:none;background:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0;text-transform:uppercase;letter-spacing:.5px}
@@ -670,53 +672,54 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .research-stamp{font-size:10px;color:var(--text3);white-space:nowrap;font-family:"JetBrains Mono"}
 
 
-/* ============ LIGHT THEME ============ */
+/* ============ LIGHT THEME — "ink on parchment" ============ */
+/* Same etching, inverted back to its engraving roots: dark ink on warm paper.
+   UI surfaces read as aged paper, borders as ink rules. */
 :root[data-theme="light"]{
-  --bg:#f4f4fb;
-  --surface:#ffffff;
-  --panel-inverted:#ececf6;
-  --text:#12122a;
-  --text2:rgba(18,18,42,.8);
-  --text3:rgba(18,18,42,.45);
-  --brand:#0000f2;
-  --brand-lift:#4646e8;
-  --accent:#c8b800;
-  --accent-glow:rgba(184,164,0,.3);
-  --warn:#a06a00;
-  --glass:rgba(18,18,42,.04);
-  --glass2:rgba(18,18,42,.1);
-  --border:rgba(18,18,42,.12);
+  --bg:#efe9dc;                 /* parchment */
+  --surface:#f7f3ea;            /* paper card */
+  --panel-inverted:#e6dfcf;
+  --text:#211d16;               /* iron-gall ink */
+  --text2:rgba(33,29,22,.78);
+  --text3:rgba(33,29,22,.48);
+  --brand:#1d1de0;              /* Nous cobalt, slightly deepened for paper */
+  --brand-lift:#4040e0;
+  --accent:#8a6d00;             /* aged gold instead of electric yellow */
+  --accent-glow:rgba(138,109,0,.25);
+  --warn:#9a6200;
+  --glass:rgba(33,29,22,.045);
+  --glass2:rgba(33,29,22,.1);
+  --border:rgba(33,29,22,.16);
+  --thead-bg:rgba(247,243,234,.92);
+  --sticky-bg:#f7f3ea;
 }
 
-/* onboarding card */
-.onboard-card{max-width:640px;margin:28px auto 8px;padding:22px 26px;border:1px solid var(--border);
-  border-radius:14px;background:var(--surface);box-shadow:0 8px 32px rgba(0,0,0,.25)}
-.onboard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.onboard-title{font-weight:600;font-size:15px;color:var(--text)}
-.onboard-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
-.onboard-close:hover{color:var(--text);background:var(--glass)}
-.onboard-card p{font-size:13px;line-height:1.55;color:var(--text2);margin-bottom:16px}
-.onboard-actions{display:flex;gap:10px}
-.onboard-actions .primary{background:var(--brand);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
-.onboard-actions .primary:hover{background:var(--brand-lift)}
-.onboard-actions .ghost{background:none;border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
-.onboard-actions .ghost:hover{color:var(--text);border-color:var(--glass2)}
+/* Art: invert the cobalt engraving back to ink-on-paper */
+:root[data-theme="light"] .art-bg{background:#efe9dc}
+:root[data-theme="light"] .art-bg img{
+  filter:invert(1) grayscale(1) brightness(1.08) contrast(0.9) sepia(0.14) blur(2px);
+  opacity:.5;
+}
+:root[data-theme="light"] .art-bg-vignette{
+  background:
+    radial-gradient(ellipse at center, transparent 30%, rgba(120,105,75,.28) 100%),
+    linear-gradient(180deg, rgba(120,105,75,.18) 0%, rgba(120,105,75,.06) 18%, rgba(120,105,75,.06) 82%, rgba(120,105,75,.3) 100%);
+}
+:root[data-theme="light"] .art-bg-grain{mix-blend-mode:multiply;opacity:.35}
 
-/* theme button */
-.theme-btn{font-size:14px}
-
-
-/* ============ LIGHT THEME OVERRIDES (hardcoded colors that break on light bg) ============ */
-:root[data-theme="light"] .stage{color:#1a1a33}
-:root[data-theme="light"] .art-bg{opacity:.06}  /* etching becomes a subtle watermark */
-:root[data-theme="light"] .art-bg-credit{color:#555}
-:root[data-theme="light"] .art-bg-credit b{color:#333}
-:root[data-theme="light"] .badge.accent{color:#8a7d00;background:rgba(184,164,0,.12);border-color:rgba(184,164,0,.35)}
-:root[data-theme="light"] .badge.success{color:#0e7a55;background:rgba(20,150,105,.12);border-color:rgba(20,150,105,.35)}
-:root[data-theme="light"] .badge.warning{color:#8a5a00;background:rgba(200,140,0,.14);border-color:rgba(200,140,0,.4)}
-:root[data-theme="light"] .badge.info{color:#3d3dcc;background:rgba(70,70,232,.1);border-color:rgba(70,70,232,.3)}
-:root[data-theme="light"] .table td.provider-reported{color:#8a6300}
-:root[data-theme="light"] .bench-kv-value.provider-reported{color:#8a6300}
-:root[data-theme="light"] .rb-pulse{background:#4646e8;box-shadow:0 0 12px rgba(70,70,232,.6)}
-:root[data-theme="light"] .claim-src:hover{background:rgba(70,70,232,.15);color:#1a1a33}
-:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.55));backdrop-filter:blur(12px)}
+/* light-mode overrides for hardcoded dark surfaces */
+:root[data-theme="light"] .stage{color:#211d16}
+:root[data-theme="light"] .theme-btn{font-size:14px}
+:root[data-theme="light"] .modal-backdrop{background:rgba(60,50,30,.38)}
+:root[data-theme="light"] .modal{background:linear-gradient(165deg,rgba(255,255,255,.88),rgba(247,243,234,.94))}
+:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(247,243,234,.55))}
+:root[data-theme="light"] .card{background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(247,243,234,.6));box-shadow:0 12px 40px rgba(80,65,35,.18)}
+:root[data-theme="light"] .card:hover{box-shadow:0 20px 50px rgba(80,65,35,.25),0 0 44px rgba(29,29,224,.08),inset 0 1px 0 rgba(255,255,255,.5)}
+:root[data-theme="light"] .badge.accent{color:#6b5400;background:rgba(138,109,0,.12);border-color:rgba(138,109,0,.35)}
+:root[data-theme="light"] .badge.success{color:#0e6b4b;background:rgba(20,150,105,.14);border-color:rgba(20,150,105,.35)}
+:root[data-theme="light"] .badge.warning{color:#7a4e00;background:rgba(154,98,0,.14);border-color:rgba(154,98,0,.4)}
+:root[data-theme="light"] .badge.info{color:#3d3dcc;background:rgba(64,64,224,.1);border-color:rgba(64,64,224,.3)}
+:root[data-theme="light"] .table td.provider-reported,:root[data-theme="light"] .bench-kv-value.provider-reported{color:#8a6300}
+:root[data-theme="light"] .rb-pulse{background:#4040e0;box-shadow:0 0 12px rgba(64,64,224,.5)}
+:root[data-theme="light"] .art-bg-credit{color:rgba(90,78,50,.55)}
+:root[data-theme="light"] .art-bg-credit b{color:#4a3f28}
