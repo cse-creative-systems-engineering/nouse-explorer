@@ -262,6 +262,24 @@ function bandOf(metric: string, value: number): 'top' | 'solid' | 'entry' | null
 /** "What is this model for" — synthesized from capabilities + benchmark bands
  *  when no distilled research profile exists. */
 function UseCaseSynthesis({ model, metrics }: { model: ModelEntry; metrics: Array<{ metric: string; value: number; method: string }> | null }) {
+  if (isNonCodingModel(model.id)) {
+    const isEmbed = /embed|voyage|bge|e5|minilm|gte|mpnet|paraphrase|text-embedding|pplx/i.test(model.id);
+    return (
+      <div className="modal-section">
+        <h3 className="modal-section-title">What this model is for</h3>
+        <div className="profile-claims">
+          <div className="profile-claim good">
+            <span className="claim-mark">◆</span>
+            <div className="claim-text">
+              {isEmbed
+                ? 'Specialized embedding model — converts text into vectors for search, retrieval (RAG), clustering, and similarity matching. Not a chat or coding model; coding/reasoning benchmarks don\u2019t apply to it.'
+                : 'Specialized audio model — built for speech and audio understanding rather than text-based coding or reasoning benchmarks.'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const researched = new Map((metrics ?? []).map((m) => [m.metric, m.value]));
   const get = (k: string) => researched.get(k) ?? (model.benchmarks?.artificial_analysis as Record<string, number> | undefined)?.[k.replace('artificial_analysis_', '')] ?? null;
 
@@ -271,34 +289,82 @@ function UseCaseSynthesis({ model, metrics }: { model: ModelEntry; metrics: Arra
   const coding = get('artificial_analysis_coding_index');
   if (coding != null) {
     const b = bandOf('artificial_analysis_coding_index', coding);
-    if (b === 'top') lines.push({ icon: '▲', text: `Top-tier coder (coding index ${coding.toFixed(0)} — upper decile of the catalog). Suited for coding agents, complex refactors, and production dev tooling.` });
-    else if (b === 'solid') lines.push({ icon: '▲', text: `Capable coder (coding index ${coding.toFixed(0)} — above catalog median). Reliable for IDE assistance and routine development tasks.` });
-    else lines.push({ icon: '▼', text: `Entry-level coding (coding index ${coding.toFixed(0)}). Fine for snippets and simple scripts; expect limitations on complex, multi-file work.` });
+    if (b === 'top') lines.push({ icon: '▲', text: `Strong coder — handles coding agents, complex refactors, and production dev tooling reliably (top 10% of catalog).` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Capable coder — reliable for IDE assistance, code review, and routine development tasks (above catalog median).` });
+    else lines.push({ icon: '▼', text: `Entry-level coder — fine for snippets and simple scripts, but expect limits on complex, multi-file work.` });
   }
 
   // General intelligence
   const intel = get('artificial_analysis_intelligence_index');
   if (intel != null) {
     const b = bandOf('artificial_analysis_intelligence_index', intel);
-    if (b === 'top') lines.push({ icon: '▲', text: `Frontier general reasoning (intelligence index ${intel.toFixed(0)}) — handles planning, research, and multi-step analysis.` });
-    else if (b === 'solid') lines.push({ icon: '▲', text: `Solid general reasoning (intelligence index ${intel.toFixed(0)}) — a good default assistant for mixed workloads.` });
-    else lines.push({ icon: '▼', text: `Light general capability (intelligence index ${intel.toFixed(0)}) — best for simple routing, classification, or high-volume simple tasks.` });
+    if (b === 'top') lines.push({ icon: '▲', text: `Frontier reasoning — good fit for research, planning, and multi-step analysis work.` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Solid general assistant — a dependable default for mixed everyday workloads.` });
+    else lines.push({ icon: '▼', text: `Light general capability — best for simple routing, classification, or high-volume simple tasks rather than deep reasoning.` });
   }
 
   // Speed
   const speed = get('median_output_tokens_per_second');
   if (speed != null && speed > 0) {
     const b = bandOf('median_output_tokens_per_second', speed);
-    if (b === 'top') lines.push({ icon: '▲', text: `Very fast (${Math.round(speed)} tok/s) — comfortable for interactive chat, live agents, and IDE streaming.` });
-    else if (b === 'solid') lines.push({ icon: '▲', text: `Comfortable speed (${Math.round(speed)} tok/s) for chat and interactive use.` });
-    else lines.push({ icon: '▼', text: `Slower output (${Math.round(speed)} tok/s) — better suited to background/batch work than live chat.` });
+    if (b === 'top') lines.push({ icon: '▲', text: `Very fast responses — comfortable for live chat, interactive agents, and streaming in an IDE.` });
+    else if (b === 'solid') lines.push({ icon: '▲', text: `Comfortable response speed for chat and interactive use.` });
+    else lines.push({ icon: '▼', text: `Slower responses — better suited to background or batch work where users aren't waiting on each token.` });
   }
 
-  // Modalities
-  const mods = model.architecture?.input_modalities ?? [];
-  if (mods.some((m) => m !== 'text')) {
-    const caps = mods.filter((m) => m !== 'text').map((m) => m[0].toUpperCase() + m.slice(1)).join(', ');
-    lines.push({ icon: '▲', text: `Multimodal: accepts ${caps} input alongside text.` });
+  // Science/research reasoning (GPQA)
+  const gpqa = get('gpqa');
+  if (gpqa != null) {
+    if (gpqa >= 85) lines.push({ icon: '▲', text: `Strong at graduate-level science — trustworthy for research assistants, technical Q&A, and analyzing scientific literature.` });
+    else if (gpqa < 45) lines.push({ icon: '▼', text: `Weak at hard science — expect confident-sounding mistakes on technical questions; verify outputs or avoid research use.` });
+  }
+
+  // Deep reasoning (HLE)
+  const hle = get('hle');
+  if (hle != null) {
+    if (hle >= 30) lines.push({ icon: '▲', text: `Frontier-level deep reasoning — capable on genuinely novel problems where most models fail.` });
+    else if (hle < 8) lines.push({ icon: '▼', text: `Limited deep reasoning — rely on it for well-known problems and standard tasks, not novel ones.` });
+  }
+
+  // Math (AIME)
+  const aime = get('aime_25') ?? get('aime');
+  if (aime != null) {
+    if (aime >= 85) lines.push({ icon: '▲', text: `Elite at multi-step math — reliable for quantitative analysis, financial modeling, and symbolic derivations.` });
+    else if (aime < 20) lines.push({ icon: '▼', text: `Weak at multi-step math — double-check arithmetic and logic; slips are likely on longer derivations.` });
+  }
+
+  // Structured output (IFBench)
+  const ifbench = get('ifbench');
+  if (ifbench != null) {
+    if (ifbench >= 75) lines.push({ icon: '▲', text: `Follows instructions precisely — good for JSON pipelines, templated reports, and agents that must emit valid tool calls.` });
+    else if (ifbench < 35) lines.push({ icon: '▼', text: `Loose instruction-follower — it may quietly ignore format constraints; validate outputs or avoid automation use.` });
+  }
+
+  // Agent tool-use (tau2)
+  const tau2 = get('tau2');
+  if (tau2 != null) {
+    if (tau2 >= 70) lines.push({ icon: '▲', text: `Disciplined agent behavior — well-suited for support bots, booking agents, and tools that act on a user's behalf.` });
+    else if (tau2 < 30) lines.push({ icon: '▼', text: `Undisciplined agent behavior — needs heavy human oversight before taking actions autonomously.` });
+  }
+
+  // Devtools (TerminalBench)
+  const tb = get('terminalbench_hard') ?? get('terminalbench_v2_1');
+  if (tb != null) {
+    if (tb >= 50) lines.push({ icon: '▲', text: `Competent in live dev environments — can drive CLI agents, DevOps automation, and computer-use workflows.` });
+    else if (tb < 15) lines.push({ icon: '▼', text: `Weak in live dev environments — avoid unsupervised shell/agent work; use only with a tight harness.` });
+  }
+
+  // Context
+  if (model.context_length) {
+    if (model.context_length >= 900000) lines.push({ icon: '▲', text: `Massive context window — can ingest entire codebases, long transcripts, or large document sets in one request.` });
+    else if (model.context_length < 32000) lines.push({ icon: '▼', text: `Limited context window — long conversations or large documents will overflow; chunk your inputs.` });
+  }
+
+  // Latency
+  const ttft = get('median_time_to_first_token_seconds');
+  if (ttft != null && ttft > 0) {
+    if (ttft <= 1) lines.push({ icon: '▲', text: `Fast first response — feels instant in chat and voice pipelines.` });
+    else if (ttft >= 5) lines.push({ icon: '▼', text: `Slow first response — users will wait; fine for async work, poor for live chat.` });
   }
 
   // Provider-claimed note
