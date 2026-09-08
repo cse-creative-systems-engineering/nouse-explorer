@@ -14,6 +14,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [aaKey, setAaKey] = useState('');
   const [distiller, setDistiller] = useState(DISTILLER_OPTIONS[0]);
   const [saved, setSaved] = useState(false);
+  const [keyTest, setKeyTest] = useState<Record<string, { ok: boolean; message: string } | 'testing'>>({});
 
   useEffect(() => {
     const b = nouse();
@@ -23,6 +24,17 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       setDistiller(s.distillerModel);
     });
   }, []);
+
+  const testKey = async (which: string) => {
+    setKeyTest((s) => ({ ...s, [which]: 'testing' }));
+    const b = nouse();
+    if (!b?.settings?.testKey) {
+      setKeyTest((s) => ({ ...s, [which]: { ok: false, message: 'Not available — update the app.' } }));
+      return;
+    }
+    const r = await b.settings.testKey(which);
+    setKeyTest((s) => ({ ...s, [which]: r }));
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +79,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               value={nousKey}
               onChange={(e) => setNousKey(e.target.value)}
             />
+            <div className="key-test-row">
+              <button type="button" className="btn key-test-btn" onClick={() => void testKey('nous')}>
+                {keyTest['nous'] === 'testing' ? 'Testing…' : 'Test key'}
+              </button>
+              {keyTest['nous'] && keyTest['nous'] !== 'testing' && (
+                <span className={`key-test-result ${keyTest['nous'].ok ? 'ok' : 'fail'}`}>{keyTest['nous'].message}</span>
+              )}
+            </div>
           </div>
 
           <div className="modal-section">
@@ -86,6 +106,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               value={aaKey}
               onChange={(e) => setAaKey(e.target.value)}
             />
+            <div className="key-test-row">
+              <button type="button" className="btn key-test-btn" onClick={() => void testKey('aa')}>
+                {keyTest['aa'] === 'testing' ? 'Testing…' : 'Test key'}
+              </button>
+              {keyTest['aa'] && keyTest['aa'] !== 'testing' && (
+                <span className={`key-test-result ${keyTest['aa'].ok ? 'ok' : 'fail'}`}>{keyTest['aa'].message}</span>
+              )}
+            </div>
           </div>
 
           <div className="modal-section">

@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('nouse', {
     get: () => ipcRenderer.invoke('settings:get') as Promise<AppSettings>,
     setSecret: (name: string, value: string) => ipcRenderer.invoke('settings:set-secret', name, value) as Promise<{ ok: boolean; view?: AppSettings }>,
     setDistiller: (model: string) => ipcRenderer.invoke('settings:set-distiller', model) as Promise<{ ok: boolean; view?: AppSettings }>,
+    testKey: (which: string) => ipcRenderer.invoke('test-key', which) as Promise<{ ok: boolean; message: string }>,
   },
   alerts: {
     list: () => ipcRenderer.invoke('alerts:list') as Promise<Watch[]>,

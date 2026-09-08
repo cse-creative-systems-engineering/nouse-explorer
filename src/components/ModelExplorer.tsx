@@ -8,6 +8,8 @@ import { GlassToggle } from './GlassToggle';
 import { ShowpieceCard } from './ShowpieceCard';
 import { ModelTable } from './ModelTable';
 import { ColumnManager } from './ColumnManager';
+import { ComparePanel } from './ComparePanel';
+import { $compareCount } from '../lib/compareStore';
 import { ModelDetail } from './ModelDetail';
 import { SettingsPanel } from './SettingsPanel';
 import { WatchesPanel } from './WatchesPanel';
@@ -70,11 +72,35 @@ export function ModelExplorer() {
       localStorage.setItem('nouse.variant', variant);
     } catch { /* non-fatal */ }
   }, [query, sort, variant]);
+
+  // URL hash sync: shareable/bookmarkable views. Read once on mount, write on change.
+  useEffect(() => {
+    try {
+      const h = new URLSearchParams(location.hash.slice(1));
+      const hs = h.get('sort'), hv = h.get('variant'), hq = h.get('q');
+      if (hs) setSort(hs);
+      if (hv) setVariant(hv);
+      if (hq !== null) setQuery(hq);
+    } catch { /* non-fatal */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      const h = new URLSearchParams();
+      if (sort !== 'coding_desc') h.set('sort', sort);
+      if (variant !== 'all') h.set('variant', variant);
+      if (query) h.set('q', query);
+      const hash = h.toString();
+      history.replaceState(null, '', hash ? `#${hash}` : location.pathname);
+    } catch { /* non-fatal */ }
+  }, [sort, variant, query]);
   const [extra, setExtra] = useState<Record<string, Record<string, number>>>({});
   const [profiledIds, setProfiledIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [watchesOpen, setWatchesOpen] = useState(false);
   const [colmanOpen, setColmanOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const compareCount = useStore($compareCount);
   const [activeWatchCount, setActiveWatchCount] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDone = useRef(0);
@@ -154,14 +180,58 @@ export function ModelExplorer() {
   const filtered = useMemo(() => {
     let list = applyVariant(models, variant, extra, profiledIds);
 
+    // Structured query: space-separated tokens. Supported:
+    //   provider:<name>   — only this provider (portal prefix)
+    //   -provider:<name>  — exclude a provider
+    //   context:>200k / context:<1m — context threshold (k/m suffixes)
+    //   free / batch / vision / multimodal — capability tokens
+    //   anything else — substring match on id/name/provider
     const q = query.trim().toLowerCase();
     if (q) {
-      list = list.filter(
-        (m) =>
-          m.id.toLowerCase().includes(q) ||
-          (m.name ?? '').toLowerCase().includes(q) ||
-          m.id.split('/')[0].toLowerCase().includes(q),
-      );
+      const tokens = q.split(/\s+/);
+      const freeText: string[] = [];
+      const provInclude: string[] = [];
+      const provExclude: string[] = [];
+      let ctxMin = 0;
+      let ctxMax = Infinity;
+      const flags: string[] = [];
+      for (const tok of tokens) {
+        if (tok.startsWith('provider:')) provInclude.push(tok.slice(9));
+        else if (tok.startsWith('-provider:')) provExclude.push(tok.slice(10));
+        else if (tok.startsWith('context:>')) {
+          const n = parseFloat(tok.slice(9));
+          if (tok.endsWith('k')) ctxMin = Math.max(ctxMin, n * 1000);
+          else if (tok.endsWith('m')) ctxMin = Math.max(ctxMin, n * 1e6);
+          else ctxMin = Math.max(ctxMin, n);
+        } else if (tok.startsWith('context:<')) {
+          const n = parseFloat(tok.slice(9));
+          if (tok.endsWith('k')) ctxMax = Math.min(ctxMax, n * 1000);
+          else if (tok.endsWith('m')) ctxMax = Math.min(ctxMax, n * 1e6);
+          else ctxMax = Math.min(ctxMax, n);
+        } else if (['free', 'batch', 'vision', 'multimodal'].includes(tok)) {
+          flags.push(tok);
+        } else if (tok) {
+          freeText.push(tok);
+        }
+      }
+      list = list.filter((m) => {
+        const prov = m.id.split('/')[0].toLowerCase();
+        if (provInclude.length && !provInclude.some((p) => prov.includes(p))) return false;
+        if (provExclude.some((p) => prov.includes(p))) return false;
+        if ((m.context_length ?? 0) < ctxMin || (m.context_length ?? Infinity) > ctxMax) return false;
+        for (const f of flags) {
+          if (f === 'free' && !m.id.endsWith(':free') && parseFloat(m.pricing.prompt) !== 0) return false;
+          if (f === 'batch' && !m.id.endsWith(':batch')) return false;
+          if (f === 'vision' && !(m.architecture?.input_modalities ?? []).includes('image')) return false;
+          if (f === 'multimodal' && (m.architecture?.input_modalities ?? []).every((x) => x === 'text')) return false;
+        }
+        if (freeText.length) {
+          return freeText.every((t) =>
+            m.id.toLowerCase().includes(t) || (m.name ?? '').toLowerCase().includes(t) || prov.includes(t),
+          );
+        }
+        return true;
+      });
     }
 
     const dir = sortDirection(sort);
@@ -223,7 +293,6 @@ export function ModelExplorer() {
       </div>
 
       <FilterBar
-        total={models.length}
         resultCount={filtered.length}
         query={query}
         onQuery={setQuery}
@@ -264,6 +333,14 @@ export function ModelExplorer() {
           title="Add, exclude, or reorder table columns"
         >
           Columns
+        </button>
+        <button
+          type="button"
+          className={`btn colman-btn${compareCount > 0 ? ' compare-active' : ''}`}
+          onClick={() => setCompareOpen(true)}
+          title={compareCount > 0 ? `Compare ${compareCount} pinned model${compareCount > 1 ? 's' : ''} side-by-side` : 'Pin models from the table, then compare them side-by-side'}
+        >
+          Compare{compareCount > 0 ? ` (${compareCount})` : ''}
         </button>
         <div className="vt">
           <button
@@ -342,6 +419,7 @@ export function ModelExplorer() {
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       {colmanOpen && <ColumnManager onClose={() => setColmanOpen(false)} />}
+      {compareOpen && <ComparePanel onClose={() => setCompareOpen(false)} />}
       {watchesOpen && <WatchesPanel onClose={() => setWatchesOpen(false)} />}
       {selected && <ModelDetail model={selected} />}
     </div>

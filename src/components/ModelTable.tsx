@@ -4,6 +4,8 @@ import type { ModelEntry } from '../lib/types';
 import { $selectedId } from '../lib/store';
 import { COLUMN_BY_ID, modalityIcon } from '../lib/columns';
 import { $columnOrder } from '../lib/columnStore';
+import { $compare, toggleCompare } from '../lib/compareStore';
+import { useStore as useStore2 } from '@nanostores/react';
 import { useStore } from '@nanostores/react';
 import { DiscountBadge } from './DiscountBadge';
 import { isBatch, isFreeVariant } from '../lib/pricing';
@@ -30,6 +32,7 @@ interface ModelTableProps {
 }
 
 export function ModelTable({ models, extra, sources }: ModelTableProps) {
+  const compareIds = useStore2($compare);
   const order = useStore($columnOrder);
   const cols = useMemo(() => order.map((id) => COLUMN_BY_ID[id]).filter(Boolean), [order]);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -244,7 +247,19 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
                       </td>
                     );
                   })}
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-icon compare-pin${compareIds.includes(m.id) ? ' pinned' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompare(m.id);
+                      }}
+                      aria-label={compareIds.includes(m.id) ? `Remove ${m.name} from comparison` : `Pin ${m.name} for comparison`}
+                      title={compareIds.includes(m.id) ? 'Remove from comparison' : 'Pin for side-by-side comparison'}
+                    >
+                      {compareIds.includes(m.id) ? '✓' : '⇄'}
+                    </button>
                     <button
                       type="button"
                       className="btn btn-icon"

@@ -133,6 +133,41 @@ ipcMain.handle('research:sources', () => {
   return byModel;
 });
 
+// Key validation: cheap authenticated calls so users get instant feedback in Settings.
+ipcMain.handle('test-key', async (_e, which: string) => {
+  const db = getDb();
+  const get = (k: string) => {
+    try {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(`secret:${k}`) as { value: string } | undefined;
+      return row?.value.startsWith('plain:') ? row.value.slice(6) : undefined;
+    } catch { return undefined; }
+  };
+  try {
+    if (which === 'nous') {
+      const key = get('nous_api_key');
+      if (!key) return { ok: false, message: 'No key saved yet.' };
+      const res = await fetch('https://inference-api.nousresearch.com/v1/models', {
+        headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10000),
+      });
+      return res.ok ? { ok: true, message: 'Key works — authenticated catalog access confirmed.' }
+                    : { ok: false, message: `Rejected (${res.status}) — check the key on the Portal.` };
+    }
+    if (which === 'aa') {
+      const key = get('aa_api_key');
+      if (!key) return { ok: false, message: 'No key saved yet.' };
+      const res = await fetch('https://artificialanalysis.ai/api/v2/data/llms/models', {
+        headers: { 'x-api-key': key }, signal: AbortSignal.timeout(15000),
+      });
+      return res.ok ? { ok: true, message: 'Key works — AA data access confirmed.' }
+                    : { ok: false, message: `Rejected (${res.status}) — check the key on artificialanalysis.ai.` };
+    }
+    return { ok: false, message: 'Unknown key.' };
+  } catch (e) {
+    return { ok: false, message: `Network error: ${(e as Error).message.slice(0, 80)}` };
+  }
+});
+
+
 ipcMain.handle('research:axes', () => {
   const db = getDb();
   const rows = db

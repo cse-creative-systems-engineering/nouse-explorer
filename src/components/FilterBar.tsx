@@ -2,7 +2,6 @@ import { Dropdown, type DropdownOption } from './Dropdown';
 import type { SortOption, VariantOption } from '../lib/filterbar';
 
 interface FilterBarProps {
-  total: number;
   resultCount: number;
   query: string;
   onQuery: (q: string) => void;
@@ -22,7 +21,6 @@ interface FilterBarProps {
  * variant dropdown applies a secondary filter on top of the sort.
  */
 export function FilterBar({
-  total,
   resultCount,
   query,
   onQuery,
@@ -50,7 +48,7 @@ export function FilterBar({
         <span className="ic">⌕</span>
         <input
           ref={searchRef}
-          placeholder={`Search ${total} models — name, provider…`}
+          placeholder={`Search — try "provider:anthropic context:>1m free"`}
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           title="Search models by name, ID, or provider (⌘K)"

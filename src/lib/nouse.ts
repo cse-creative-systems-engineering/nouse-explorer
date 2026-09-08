@@ -65,6 +65,7 @@ export interface NouseBridge {
     get: () => Promise<AppSettings>;
     setSecret: (name: string, value: string) => Promise<{ ok: boolean; view?: AppSettings }>;
     setDistiller: (model: string) => Promise<{ ok: boolean; view?: AppSettings }>;
+    testKey: (which: string) => Promise<{ ok: boolean; message: string }>;
   };
   alerts: {
     list: () => Promise<Watch[]>;
