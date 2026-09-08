@@ -97,6 +97,7 @@ export function ModelExplorer() {
   const [extra, setExtra] = useState<Record<string, Record<string, number>>>({});
   const [profiledIds, setProfiledIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [lastResearch, setLastResearch] = useState<string | null>(null);
   const [watchesOpen, setWatchesOpen] = useState(false);
   const [colmanOpen, setColmanOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -143,12 +144,32 @@ export function ModelExplorer() {
     if (research.done > prevDone.current) {
       prevDone.current = research.done;
       loadResearch();
+      try { localStorage.setItem('nouse.lastResearch', new Date().toISOString()); } catch {}
+      window.dispatchEvent(new Event('research-done'));
     }
+  }, [research.done]);
+
+  useEffect(() => {
     if (prevRunning.current && !research.running) {
       loadResearch();
     }
     prevRunning.current = research.running;
   }, [research.done, research.running]);
+
+  useEffect(() => {
+    const fmt = () => {
+      try {
+        const t = localStorage.getItem('nouse.lastResearch');
+        if (!t) return setLastResearch(null);
+        const hrs = (Date.now() - new Date(t).getTime()) / 3600000;
+        setLastResearch(hrs < 1 ? `${Math.max(1, Math.round(hrs * 60))}m ago` : `${Math.round(hrs)}h ago`);
+      } catch { setLastResearch(null); }
+    };
+    fmt();
+    const iv = setInterval(fmt, 60000);
+    window.addEventListener('research-done', fmt);
+    return () => { clearInterval(iv); window.removeEventListener('research-done', fmt); };
+  }, []);
 
   const resultsRef = useRef<HTMLDivElement>(null);
   const hintFadeTimer = useRef<number | undefined>(undefined);
@@ -238,7 +259,7 @@ export function ModelExplorer() {
     list = [...list]
       .map((m) => ({ m, v: sortValue(m, sort, extra[m.id]) }))
       .sort((a, b) => {
-        if (a.v === null && b.v === null) return 0;
+        if (a.v === null && b.v === null) return a.m.name.localeCompare(b.m.name);
         if (a.v === null) return 1;
         if (b.v === null) return -1;
         if (typeof a.v === 'string' && typeof b.v === 'string') {
@@ -315,6 +336,12 @@ export function ModelExplorer() {
           onChange={(v) => $autoRefresh.set(v)}
           label="AUTO-REFRESH"
         />
+        <span
+          className="research-stamp"
+          title="When the research engine last updated this data"
+        >
+          {lastResearch ? `researched ${lastResearch}` : ''}
+        </span>
         <div className="deck-divider" aria-hidden="true" />
         <button
           type="button"
@@ -375,7 +402,7 @@ export function ModelExplorer() {
             <p>
               <b>No models match{query ? ` “${query}”` : ''}</b> the current filters.
             </p>
-            <p className="empty-hint">Try a shorter search, a different variant, or clear everything below.</p>
+            <p className="empty-hint">Try a shorter search, a different variant, or press <b>Esc</b> in the search box to clear it.</p>
             <button
               type="button"
               className="btn"

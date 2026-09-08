@@ -81,7 +81,7 @@ export function ModelTable({ models, extra, sources }: ModelTableProps) {
       const rawVb = def.value(b, extra?.[b.id]);
       const va = (rawVa === null || rawVa === undefined) && def.providerValue ? (def.providerValue(a, extra?.[a.id]) ?? null) : (rawVa ?? null);
       const vb = (rawVb === null || rawVb === undefined) && def.providerValue ? (def.providerValue(b, extra?.[b.id]) ?? null) : (rawVb ?? null);
-      if (va === null && vb === null) return 0;
+      if (va === null && vb === null) return a.name.localeCompare(b.name);
       if (va === null) return 1;
       if (vb === null) return -1;
       let cmp: number;

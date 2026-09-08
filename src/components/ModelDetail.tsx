@@ -16,6 +16,7 @@ import {
   resolvePricing,
 } from '../lib/pricing';
 import { isNonCodingModel } from '../lib/columns';
+import { useModalFocus } from '../lib/useModalFocus';
 import { DiscountBadge } from './DiscountBadge';
 
 interface ModelDetailProps {
@@ -534,6 +535,8 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
 
 export function ModelDetail({ model }: ModelDetailProps) {
   const selectedId = useStore($selectedId);
+  const active = !!model;
+  const focusRef = useModalFocus(active);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -553,7 +556,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
 
   return (
     <div className="modal-backdrop" onClick={() => $selectedId.set(null)} role="dialog" aria-modal="true" aria-label={`${model.name} details`}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} ref={focusRef} tabIndex={-1} style={{ outline: 'none' }}>
         <header className="modal-head">
           <div style={{ minWidth: 0 }}>
             <h2 className="modal-title">{model.name}</h2>
@@ -680,7 +683,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
                 <span className="kv-label">Provider max context</span>
                 <span className="kv-value">{formatContext(model.top_provider?.context_length ?? 0)}</span>
               </div>
-              <div className="kv">
+              <div className="kv" title="Maximum tokens the model can generate in a single response — caps how long any one answer can be. Long-form generation (full files, long reports) needs a high limit; chat needs far less.">
                 <span className="kv-label">Max completion</span>
                 <span className="kv-value">{formatContext(model.top_provider?.max_completion_tokens ?? 0)}</span>
               </div>

@@ -59,6 +59,7 @@ export function buildSortOptions(metricCoverage: Record<string, number>): SortOp
     { id: 'aime_desc', label: 'AIME: High to Low', pending: !covered('aime') },
     { id: 'math_desc', label: 'AA Math: High to Low', pending: !covered('artificial_analysis_math_index') },
     { id: 'likes_desc', label: 'Most Liked (HF)', pending: !covered('hf_likes') },
+    { id: 'free_first', label: 'Free models first' },
   ];
 }
 
@@ -129,6 +130,7 @@ export function sortValue(m: ModelEntry, sortId: string, extra: Record<string, n
     case 'aime_desc': return extra?.aime ?? null;
     case 'math_desc': return extra?.artificial_analysis_math_index ?? null;
     case 'likes_desc': return extra?.hf_likes ?? null;
+    case 'free_first': return (m.id.endsWith(':free') || (parseFloat(m.pricing.prompt) === 0 && parseFloat(m.pricing.completion) === 0)) ? 1 : 0;
     case 'in_image_first': return (m.architecture?.input_modalities ?? []).includes('image') ? 1 : 0;
     case 'in_video_first': return (m.architecture?.input_modalities ?? []).includes('video') ? 1 : 0;
     case 'in_audio_first': return (m.architecture?.input_modalities ?? []).includes('audio') ? 1 : 0;
