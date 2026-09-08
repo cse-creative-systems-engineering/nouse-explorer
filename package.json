@@ -50,11 +50,16 @@
       ],
       "category": "Development",
       "icon": "build/icon.png",
-      "synopsis": "Explore every model on the Nous Portal — live pricing, benchmarks, research profiles, and price alerts."
+      "synopsis": "Explore every model on the Nous Portal \u2014 live pricing, benchmarks, research profiles, and price alerts."
     }
   },
   "author": {
     "name": "cse-creative-systems-engineering",
     "email": "cse-creative-systems-engineering@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cse-creative-systems-engineering/nouse-explorer.git"
   }
 }
