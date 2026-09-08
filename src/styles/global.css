@@ -672,67 +672,69 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .research-stamp{font-size:10px;color:var(--text3);white-space:nowrap;font-family:"JetBrains Mono"}
 
 
-/* ============ LIGHT THEME — "ink on parchment" ============ */
-/* Same etching, inverted back to its engraving roots: dark ink on warm paper.
-   UI surfaces read as aged paper, borders as ink rules. */
+/* ============ LIGHT THEME — authentic Nous hpv2-theme-light ============ */
+/* Tokens lifted verbatim from portal.nousresearch.com's compiled CSS
+   (.hermes-portal-v2.hpv2-theme-light): near-white stage, deep-cobalt
+   inverted panels, #1a1a1a ink. */
 :root[data-theme="light"]{
-  --bg:#efe9dc;                 /* parchment */
-  --surface:#f7f3ea;            /* paper card */
-  --panel-inverted:#e6dfcf;
-  --text:#211d16;               /* iron-gall ink */
-  --text2:rgba(33,29,22,.78);
-  --text3:rgba(33,29,22,.48);
-  --brand:#1d1de0;              /* Nous cobalt, slightly deepened for paper */
-  --brand-lift:#4040e0;
-  --accent:#8a6d00;             /* aged gold instead of electric yellow */
-  --accent-glow:rgba(138,109,0,.25);
-  --warn:#9a6200;
-  --glass:rgba(33,29,22,.045);
-  --glass2:rgba(33,29,22,.1);
-  --border:rgba(33,29,22,.16);
-  --thead-bg:rgba(247,243,234,.92);
-  --sticky-bg:#f7f3ea;
+  --bg:#fdfdfd;                    /* --hpv2-stage */
+  --surface:#fdfdfd;               /* --hpv2-surface */
+  --panel-inverted:#0847c4;        /* --hpv2-panel-inverted */
+  --text:#1a1a1a;                  /* --hpv2-ink */
+  --text2:#2b2b2bcc;               /* --hpv2-body */
+  --text3:rgba(26,26,26,.45);
+  --brand:#0847c4;                 /* --hpv2-brand (light-mode cobalt) */
+  --brand-lift:#3a6ce0;
+  --accent:#7a4b00;                /* --hpv2-rail-warn (aged amber on paper) */
+  --accent-glow:rgba(122,75,0,.22);
+  --warn:#b45309;                  /* --hpv2-warn */
+  --glass:rgba(26,26,26,.04);      /* ink-alpha panels (portal uses #f6f6f6/#f4f4f4) */
+  --glass2:rgba(26,26,26,.09);
+  --border:rgba(138,138,138,.35);  /* --hpv2-hairline #8a8a8a */
+  --thead-bg:rgba(253,253,253,.94);
+  --sticky-bg:#fdfdfd;
+  --success:#047857; --info:#0847c4;
 }
 
 /* Art: invert the cobalt engraving back to ink-on-paper */
-:root[data-theme="light"] .art-bg{background:#efe9dc}
+:root[data-theme="light"] .art-bg{background:#fdfdfd}
 :root[data-theme="light"] .art-bg img{
-  filter:invert(1) grayscale(1) brightness(1.08) contrast(0.9) sepia(0.14) blur(2px);
-  opacity:.5;
+  filter:invert(1) grayscale(1) brightness(1.12) contrast(0.88) blur(2px);
+  opacity:.42;
 }
 :root[data-theme="light"] .art-bg-vignette{
   background:
-    radial-gradient(ellipse at center, transparent 30%, rgba(120,105,75,.28) 100%),
-    linear-gradient(180deg, rgba(120,105,75,.18) 0%, rgba(120,105,75,.06) 18%, rgba(120,105,75,.06) 82%, rgba(120,105,75,.3) 100%);
+    radial-gradient(ellipse at center, transparent 30%, rgba(26,26,26,.14) 100%),
+    linear-gradient(180deg, rgba(26,26,26,.08) 0%, rgba(26,26,26,.03) 18%, rgba(26,26,26,.03) 82%, rgba(26,26,26,.16) 100%);
 }
 :root[data-theme="light"] .art-bg-grain{mix-blend-mode:multiply;opacity:.35}
 
 /* light-mode overrides for hardcoded dark surfaces */
-:root[data-theme="light"] .stage{color:#211d16}
+:root[data-theme="light"] .stage{color:#1a1a1a}
 :root[data-theme="light"] .theme-btn{font-size:14px}
-:root[data-theme="light"] .modal-backdrop{background:rgba(60,50,30,.38)}
-:root[data-theme="light"] .modal{background:linear-gradient(165deg,rgba(255,255,255,.88),rgba(247,243,234,.94))}
-:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(247,243,234,.55))}
-:root[data-theme="light"] .card{background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(247,243,234,.6));box-shadow:0 12px 40px rgba(80,65,35,.18)}
-:root[data-theme="light"] .card:hover{box-shadow:0 20px 50px rgba(80,65,35,.25),0 0 44px rgba(29,29,224,.08),inset 0 1px 0 rgba(255,255,255,.5)}
-:root[data-theme="light"] .badge.accent{color:#6b5400;background:rgba(138,109,0,.12);border-color:rgba(138,109,0,.35)}
-:root[data-theme="light"] .badge.success{color:#0e6b4b;background:rgba(20,150,105,.14);border-color:rgba(20,150,105,.35)}
-:root[data-theme="light"] .badge.warning{color:#7a4e00;background:rgba(154,98,0,.14);border-color:rgba(154,98,0,.4)}
-:root[data-theme="light"] .badge.info{color:#3d3dcc;background:rgba(64,64,224,.1);border-color:rgba(64,64,224,.3)}
-:root[data-theme="light"] .table td.provider-reported,:root[data-theme="light"] .bench-kv-value.provider-reported{color:#8a6300}
-:root[data-theme="light"] .rb-pulse{background:#4040e0;box-shadow:0 0 12px rgba(64,64,224,.5)}
-:root[data-theme="light"] .art-bg-credit{color:rgba(90,78,50,.55)}
-:root[data-theme="light"] .art-bg-credit b{color:#4a3f28}
+:root[data-theme="light"] .modal-backdrop{background:rgba(26,26,26,.35)}
+:root[data-theme="light"] .modal{background:linear-gradient(165deg,rgba(255,255,255,.92),rgba(253,253,253,.97))}
+:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(246,246,246,.7))}
+:root[data-theme="light"] .card{background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(244,244,244,.7));box-shadow:0 12px 40px rgba(26,26,26,.12)}
+:root[data-theme="light"] .card:hover{box-shadow:0 20px 50px rgba(26,26,26,.18),0 0 44px rgba(8,71,196,.08),inset 0 1px 0 rgba(255,255,255,.6)}
+:root[data-theme="light"] .badge.accent{color:#7a4b00;background:rgba(122,75,0,.1);border-color:rgba(122,75,0,.35)}
+:root[data-theme="light"] .badge.success{color:#047857;background:rgba(4,120,87,.1);border-color:rgba(4,120,87,.35)}
+:root[data-theme="light"] .badge.warning{color:#b45309;background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.4)}
+:root[data-theme="light"] .badge.info{color:#0847c4;background:rgba(8,71,196,.08);border-color:rgba(8,71,196,.3)}
+:root[data-theme="light"] .table td.provider-reported,:root[data-theme="light"] .bench-kv-value.provider-reported{color:#7a4b00}
+:root[data-theme="light"] .rb-pulse{background:#0847c4;box-shadow:0 0 12px rgba(8,71,196,.4)}
+:root[data-theme="light"] .art-bg-credit{color:rgba(26,26,26,.45)}
+:root[data-theme="light"] .art-bg-credit b{color:#1a1a1a}
 
 /* light: flip the white-glass system to ink-glass */
-:root[data-theme="light"] .table tbody td{border-bottom-color:rgba(33,29,22,.09)}
-:root[data-theme="light"] .table tbody tr:nth-child(even){background:rgba(33,29,22,.03)}
-:root[data-theme="light"] .table tbody tr:hover,:root[data-theme="light"] .table tbody tr:nth-child(even):hover{background:rgba(29,29,224,.05)}
-:root[data-theme="light"] .table tbody tr:focus-visible{background:rgba(29,29,224,.07);box-shadow:inset 0 0 0 1px rgba(29,29,224,.5),inset 3px 0 0 var(--brand-lift)}
+:root[data-theme="light"] .table tbody td{border-bottom-color:rgba(26,26,26,.08)}
+:root[data-theme="light"] .table tbody tr:nth-child(even){background:rgba(26,26,26,.025)}
+:root[data-theme="light"] .table tbody tr:hover,:root[data-theme="light"] .table tbody tr:nth-child(even):hover{background:rgba(8,71,196,.045)}
+:root[data-theme="light"] .table tbody tr:focus-visible{background:rgba(8,71,196,.06);box-shadow:inset 0 0 0 1px rgba(8,71,196,.5),inset 3px 0 0 var(--brand-lift)}
 :root[data-theme="light"] .hnum{text-shadow:none}
 :root[data-theme="light"] .htitle em{text-shadow:none}
 :root[data-theme="light"] .cmdbar::before{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%)}
-:root[data-theme="light"] .cmdbar:focus-within{border-color:rgba(29,29,224,.55);box-shadow:0 0 0 4px rgba(29,29,224,.08),0 0 34px rgba(29,29,224,.15)}
+:root[data-theme="light"] .cmdbar:focus-within{border-color:rgba(8,71,196,.55);box-shadow:0 0 0 4px rgba(8,71,196,.08),0 0 34px rgba(8,71,196,.15)}
 :root[data-theme="light"] .modal{color:#211d16}
 :root[data-theme="light"] .rb-bar{background:rgba(33,29,22,.07)}
-:root[data-theme="light"] .scroll-hint{background:rgba(247,243,234,.92);color:rgba(33,29,22,.6);border:1px solid rgba(33,29,22,.12);box-shadow:0 4px 18px rgba(80,65,35,.15)}
+:root[data-theme="light"] .scroll-hint{background:rgba(253,253,253,.94);color:rgba(26,26,26,.6);border:1px solid rgba(26,26,26,.12);box-shadow:0 4px 18px rgba(26,26,26,.1)}
