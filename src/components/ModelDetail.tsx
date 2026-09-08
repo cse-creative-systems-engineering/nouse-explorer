@@ -45,6 +45,28 @@ function PricingRow({ label, value, plain }: { label: string; value?: string; pl
 }
 
 
+
+function CopyableId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="copy-id"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(id);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch { /* clipboard unavailable */ }
+      }}
+      title="Click to copy the model ID"
+    >
+      <span className="copy-id-text">{id}</span>
+      <span className={`copy-id-badge${copied ? ' copied' : ''}`}>{copied ? '✓ copied' : 'copy'}</span>
+    </button>
+  );
+}
+
 function KeyStats({ model }: { model: ModelEntry }) {
   const resolved = resolvePricing(model.pricing);
   const arch = model.architecture;
@@ -447,6 +469,11 @@ function BenchmarksSection({ modelId, model }: { modelId: string; model: ModelEn
           This is an embedding / audio model — coding and reasoning benchmarks don\u2019t apply to it (shown as N/A in the table).
         </div>
       )}
+      {!nonCoding && !rows.some((r) => r.label === 'Agentic index') && researched.has('artificial_analysis_intelligence_index') && (
+        <div style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(245,245,245,.04)', border: '1px solid var(--border)', fontSize: 11.5, color: 'var(--text3)', marginBottom: 10 }}>
+          No Agentic Index shown — Artificial Analysis retired this metric from their API, so only models whose catalog entry embedded it (earlier releases) carry a value. Its absence says nothing about this model's agentic ability.
+        </div>
+      )}
       {!nonCoding && rows.length === 0 && (
         <div style={{ padding: '12px', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.20)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
           No benchmark data from any source yet — this model hasn\u2019t been scored by Artificial Analysis, isn\u2019t covered by OpenRouter, and its provider hasn\u2019t published verified scores.
@@ -669,6 +696,10 @@ export function ModelDetail({ model }: ModelDetailProps) {
               <h3 className="modal-section-title">Metadata</h3>
               <div className="kv-grid">
                 <div className="kv">
+                  <span className="kv-label">Model ID (click to copy)</span>
+                  <CopyableId id={model.id} />
+                </div>
+                <div className="kv">
                   <span className="kv-label">Canonical slug</span>
                   <span className="kv-value">{model.canonical_slug}</span>
                 </div>
@@ -678,6 +709,16 @@ export function ModelDetail({ model }: ModelDetailProps) {
                     <span className="kv-value">{model.hugging_face_id}</span>
                   </div>
                 )}
+              </div>
+              <div className="detail-links">
+                <a className="detail-link" href={`https://openrouter.ai/${model.id.split(':')[0]}`} target="_blank" rel="noreferrer" title="Open this model on OpenRouter — pricing, providers, and playground">OpenRouter ↗</a>
+                <a className="detail-link" href={`https://artificialanalysis.ai/models?search=${encodeURIComponent(model.name ?? '')}`} target="_blank" rel="noreferrer" title="Search Artificial Analysis for this model's benchmark profile">Artificial Analysis ↗</a>
+                {model.hugging_face_id && (
+                  <a className="detail-link" href={`https://huggingface.co/${model.hugging_face_id}`} target="_blank" rel="noreferrer" title="Open the Hugging Face model card — weights, docs, and community">Hugging Face ↗</a>
+                )}
+                <a className="detail-link" href={`https://duckduckgo.com/?q=${encodeURIComponent((model.name ?? '') + ' ' + providerFromId(model.id) + ' model documentation')}`} target="_blank" rel="noreferrer" title="Search for this model's official documentation">Docs search ↗</a>
+              </div>
+              <div className="kv-grid">
                 <div className="kv">
                   <span className="kv-label">Created</span>
                   <span className="kv-value">{model.created ? new Date(model.created * 1000).toISOString().slice(0, 10) : '—'}</span>

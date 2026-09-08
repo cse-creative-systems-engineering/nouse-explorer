@@ -54,14 +54,28 @@ export function ModelExplorer() {
   const selectedId = useStore($selectedId);
   const research = useStore($research);
 
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState('coding_desc');
-  const [variant, setVariant] = useState('all');
+  const [query, setQuery] = useState(() => {
+    try { return localStorage.getItem('nouse.query') ?? ''; } catch { return ''; }
+  });
+  const [sort, setSort] = useState(() => {
+    try { return localStorage.getItem('nouse.sort') ?? 'coding_desc'; } catch { return 'coding_desc'; }
+  });
+  const [variant, setVariant] = useState(() => {
+    try { return localStorage.getItem('nouse.variant') ?? 'all'; } catch { return 'all'; }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('nouse.query', query);
+      localStorage.setItem('nouse.sort', sort);
+      localStorage.setItem('nouse.variant', variant);
+    } catch { /* non-fatal */ }
+  }, [query, sort, variant]);
   const [extra, setExtra] = useState<Record<string, Record<string, number>>>({});
   const [profiledIds, setProfiledIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [watchesOpen, setWatchesOpen] = useState(false);
   const [colmanOpen, setColmanOpen] = useState(false);
+  const [activeWatchCount, setActiveWatchCount] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDone = useRef(0);
   const prevRunning = useRef(false);
@@ -93,7 +107,10 @@ export function ModelExplorer() {
   useEffect(() => {
     loadResearch();
     const b = nouse();
-    if (b?.alerts) void b.alerts.setCatalog(models);
+    if (b?.alerts) {
+      void b.alerts.setCatalog(models);
+      void b.alerts.list().then((ws) => setActiveWatchCount(ws.filter((w) => w.active).length)).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -207,6 +224,7 @@ export function ModelExplorer() {
 
       <FilterBar
         total={models.length}
+        resultCount={filtered.length}
         query={query}
         onQuery={setQuery}
         sort={sort}
@@ -236,6 +254,7 @@ export function ModelExplorer() {
           title="Alerts & watches — track price drops, discounts, and model changes"
         >
           🔔
+          {activeWatchCount > 0 && <span className="bell-badge">{activeWatchCount}</span>}
         </button>
         <div className="deck-divider" aria-hidden="true" />
         <button

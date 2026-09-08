@@ -3,6 +3,7 @@ import type { SortOption, VariantOption } from '../lib/filterbar';
 
 interface FilterBarProps {
   total: number;
+  resultCount: number;
   query: string;
   onQuery: (q: string) => void;
   sort: string;
@@ -22,6 +23,7 @@ interface FilterBarProps {
  */
 export function FilterBar({
   total,
+  resultCount,
   query,
   onQuery,
   sort,
@@ -66,6 +68,11 @@ export function FilterBar({
           >
             ✕
           </button>
+        )}
+        {query && (
+          <span className="search-count" title={`${resultCount} models match the current search and filters`}>
+            {resultCount} match{resultCount === 1 ? 'es' : ''}
+          </span>
         )}
         <span className="kbd" title="Focus search (⌘K / Ctrl+K)">⌘K</span>
       </div>
