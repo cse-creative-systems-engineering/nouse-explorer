@@ -672,69 +672,69 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;overfl
 .research-stamp{font-size:10px;color:var(--text3);white-space:nowrap;font-family:"JetBrains Mono"}
 
 
-/* ============ LIGHT THEME — authentic Nous hpv2-theme-light ============ */
-/* Tokens lifted verbatim from portal.nousresearch.com's compiled CSS
-   (.hermes-portal-v2.hpv2-theme-light): near-white stage, deep-cobalt
-   inverted panels, #1a1a1a ink. */
+/* ============ LIGHT THEME — "Nous cobalt" (hermes-agent.nousresearch.com) ============ */
+/* The signature Nous light look: electric cobalt canvas, white ink, the
+   etching as white line art duotone. Values from the live site's compiled CSS
+   (body{background:#0000f2;color:#f5f5f5}, ink variants #0029de, grey #eceaf5). */
 :root[data-theme="light"]{
-  --bg:#fdfdfd;                    /* --hpv2-stage */
-  --surface:#fdfdfd;               /* --hpv2-surface */
-  --panel-inverted:#0847c4;        /* --hpv2-panel-inverted */
-  --text:#1a1a1a;                  /* --hpv2-ink */
-  --text2:#2b2b2bcc;               /* --hpv2-body */
-  --text3:rgba(26,26,26,.45);
-  --brand:#0847c4;                 /* --hpv2-brand (light-mode cobalt) */
-  --brand-lift:#3a6ce0;
-  --accent:#7a4b00;                /* --hpv2-rail-warn (aged amber on paper) */
-  --accent-glow:rgba(122,75,0,.22);
-  --warn:#b45309;                  /* --hpv2-warn */
-  --glass:rgba(26,26,26,.04);      /* ink-alpha panels (portal uses #f6f6f6/#f4f4f4) */
-  --glass2:rgba(26,26,26,.09);
-  --border:rgba(138,138,138,.35);  /* --hpv2-hairline #8a8a8a */
-  --thead-bg:rgba(253,253,253,.94);
-  --sticky-bg:#fdfdfd;
-  --success:#047857; --info:#0847c4;
+  --bg:#0000f2;                    /* signature cobalt canvas */
+  --surface:rgba(255,255,255,.07); /* frosted panels on cobalt */
+  --panel-inverted:#f5f5f5;        /* inverted panels go white w/ cobalt ink */
+  --text:#f5f5f5;                  /* white ink */
+  --text2:rgba(245,245,245,.75);
+  --text3:rgba(245,245,245,.45);
+  --brand:#ffffff;                 /* interactive accent = white on cobalt */
+  --brand-lift:#eceaf5;
+  --accent:#edff45;                /* the electric yellow — unchanged */
+  --accent-glow:rgba(237,255,69,.35);
+  --warn:#ffcd42;
+  --glass:rgba(255,255,255,.04);
+  --glass2:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.18);  /* hairlines as white alphas */
+  --thead-bg:rgba(0,0,180,.85);
+  --sticky-bg:rgba(0,0,150,.55);
+  --success:#6effd6; --info:#f5f5f5;
 }
 
-/* Art: invert the cobalt engraving back to ink-on-paper */
-:root[data-theme="light"] .art-bg{background:#fdfdfd}
+/* Art: the etching as white duotone line art over cobalt (site uses blend modes) */
+:root[data-theme="light"] .art-bg{background:#0000f2}
 :root[data-theme="light"] .art-bg img{
-  filter:invert(1) grayscale(1) brightness(1.12) contrast(0.88) blur(2px);
-  opacity:.42;
+  filter:invert(1) grayscale(1) brightness(1.1) contrast(1.25) blur(0.5px);
+  opacity:.8;
+  mix-blend-mode:screen;
 }
 :root[data-theme="light"] .art-bg-vignette{
   background:
-    radial-gradient(ellipse at center, transparent 30%, rgba(26,26,26,.14) 100%),
-    linear-gradient(180deg, rgba(26,26,26,.08) 0%, rgba(26,26,26,.03) 18%, rgba(26,26,26,.03) 82%, rgba(26,26,26,.16) 100%);
+    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,140,.3) 100%),
+    linear-gradient(180deg, rgba(0,0,140,.12) 0%, transparent 18%, transparent 82%, rgba(0,0,120,.22) 100%);
 }
-:root[data-theme="light"] .art-bg-grain{mix-blend-mode:multiply;opacity:.35}
+:root[data-theme="light"] .art-bg-grain{mix-blend-mode:screen;opacity:.3}
 
-/* light-mode overrides for hardcoded dark surfaces */
-:root[data-theme="light"] .stage{color:#1a1a1a}
+:root[data-theme="light"] .stage{color:#f5f5f5}
 :root[data-theme="light"] .theme-btn{font-size:14px}
-:root[data-theme="light"] .modal-backdrop{background:rgba(26,26,26,.35)}
-:root[data-theme="light"] .modal{background:linear-gradient(165deg,rgba(255,255,255,.92),rgba(253,253,253,.97))}
-:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(246,246,246,.7))}
-:root[data-theme="light"] .card{background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(244,244,244,.7));box-shadow:0 12px 40px rgba(26,26,26,.12)}
-:root[data-theme="light"] .card:hover{box-shadow:0 20px 50px rgba(26,26,26,.18),0 0 44px rgba(8,71,196,.08),inset 0 1px 0 rgba(255,255,255,.6)}
-:root[data-theme="light"] .badge.accent{color:#7a4b00;background:rgba(122,75,0,.1);border-color:rgba(122,75,0,.35)}
-:root[data-theme="light"] .badge.success{color:#047857;background:rgba(4,120,87,.1);border-color:rgba(4,120,87,.35)}
-:root[data-theme="light"] .badge.warning{color:#b45309;background:rgba(180,83,9,.1);border-color:rgba(180,83,9,.4)}
-:root[data-theme="light"] .badge.info{color:#0847c4;background:rgba(8,71,196,.08);border-color:rgba(8,71,196,.3)}
-:root[data-theme="light"] .table td.provider-reported,:root[data-theme="light"] .bench-kv-value.provider-reported{color:#7a4b00}
-:root[data-theme="light"] .rb-pulse{background:#0847c4;box-shadow:0 0 12px rgba(8,71,196,.4)}
-:root[data-theme="light"] .art-bg-credit{color:rgba(26,26,26,.45)}
-:root[data-theme="light"] .art-bg-credit b{color:#1a1a1a}
+:root[data-theme="light"] .modal-backdrop{background:rgba(0,0,60,.55)}
+:root[data-theme="light"] .modal{background:linear-gradient(165deg,rgba(10,10,60,.92),rgba(8,8,90,.95))}
+:root[data-theme="light"] .glass-bar{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.05))}
+:root[data-theme="light"] .card{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.04));box-shadow:0 12px 40px rgba(0,0,40,.3)}
+:root[data-theme="light"] .card:hover{box-shadow:0 20px 50px rgba(0,0,40,.4),0 0 44px rgba(237,255,69,.12),inset 0 1px 0 rgba(255,255,255,.12)}
+:root[data-theme="light"] .badge.accent{color:#edff45;background:rgba(237,255,69,.1);border-color:rgba(237,255,69,.3)}
+:root[data-theme="light"] .badge.success{color:#6effd6;background:rgba(110,255,214,.1);border-color:rgba(110,255,214,.3)}
+:root[data-theme="light"] .badge.warning{color:#ffcd42;background:rgba(255,205,66,.1);border-color:rgba(255,205,66,.3)}
+:root[data-theme="light"] .badge.info{color:#b5b5f2;background:rgba(181,181,242,.1);border-color:rgba(181,181,242,.3)}
+:root[data-theme="light"] .table td.provider-reported,:root[data-theme="light"] .bench-kv-value.provider-reported{color:#ffcd42}
+:root[data-theme="light"] .rb-pulse{background:#b5b5f2;box-shadow:0 0 12px rgba(181,181,242,.5)}
+:root[data-theme="light"] .art-bg-credit{color:rgba(245,245,245,.45)}
+:root[data-theme="light"] .art-bg-credit b{color:#f5f5f5}
 
 /* light: flip the white-glass system to ink-glass */
-:root[data-theme="light"] .table tbody td{border-bottom-color:rgba(26,26,26,.08)}
-:root[data-theme="light"] .table tbody tr:nth-child(even){background:rgba(26,26,26,.025)}
-:root[data-theme="light"] .table tbody tr:hover,:root[data-theme="light"] .table tbody tr:nth-child(even):hover{background:rgba(8,71,196,.045)}
-:root[data-theme="light"] .table tbody tr:focus-visible{background:rgba(8,71,196,.06);box-shadow:inset 0 0 0 1px rgba(8,71,196,.5),inset 3px 0 0 var(--brand-lift)}
+:root[data-theme="light"] .table tbody td{border-bottom-color:rgba(255,255,255,.09)}
+:root[data-theme="light"] .table tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
+:root[data-theme="light"] .table tbody tr:hover,:root[data-theme="light"] .table tbody tr:nth-child(even):hover{background:rgba(255,255,255,.06)}
+:root[data-theme="light"] .table tbody tr:focus-visible{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 3px 0 0 var(--accent)}
 :root[data-theme="light"] .hnum{text-shadow:none}
 :root[data-theme="light"] .htitle em{text-shadow:none}
-:root[data-theme="light"] .cmdbar::before{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%)}
-:root[data-theme="light"] .cmdbar:focus-within{border-color:rgba(8,71,196,.55);box-shadow:0 0 0 4px rgba(8,71,196,.08),0 0 34px rgba(8,71,196,.15)}
-:root[data-theme="light"] .modal{color:#211d16}
-:root[data-theme="light"] .rb-bar{background:rgba(33,29,22,.07)}
-:root[data-theme="light"] .scroll-hint{background:rgba(253,253,253,.94);color:rgba(26,26,26,.6);border:1px solid rgba(26,26,26,.12);box-shadow:0 4px 18px rgba(26,26,26,.1)}
+:root[data-theme="light"] .cmdbar::before{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.12) 50%,transparent 70%)}
+:root[data-theme="light"] .cmdbar:focus-within{border-color:rgba(255,255,255,.55);box-shadow:0 0 0 4px rgba(237,255,69,.1),0 0 34px rgba(255,255,255,.15)}
+:root[data-theme="light"] .modal{color:#f5f5f5}
+:root[data-theme="light"] .rb-bar{background:rgba(255,255,255,.08)}
+:root[data-theme="light"] .scroll-hint{background:rgba(0,0,150,.7);color:rgba(245,245,245,.7);border:1px solid rgba(255,255,255,.15);box-shadow:0 4px 18px rgba(0,0,40,.35)}
